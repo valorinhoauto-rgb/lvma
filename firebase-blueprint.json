@@ -40,6 +40,32 @@
       },
       "required": ["id", "userId", "gameMode", "score"]
     },
+    "Friend": {
+      "title": "Friend",
+      "description": "User friend relationship",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "nickname": { "type": "string", "maxLength": 30 },
+        "name": { "type": "string", "maxLength": 50 },
+        "avatar": { "type": "string", "maxLength": 500 },
+        "avatarColor": { "type": "string", "maxLength": 30 },
+        "level": { "type": "number" },
+        "addedAt": { "type": "string" }
+      },
+      "required": ["id", "nickname"]
+    },
+    "Nickname": {
+      "title": "Nickname",
+      "description": "Unique nickname registry to prevent duplicate nicknames across all players",
+      "type": "object",
+      "properties": {
+        "nickname": { "type": "string", "maxLength": 30 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["nickname", "userId"]
+    },
     "RoomDoc": {
       "title": "RoomDoc",
       "description": "Multiplayer game room document for real-time synchronization",
@@ -61,6 +87,14 @@
     "/users/{userId}/gameHistory/{historyId}": {
       "schema": "GameHistory",
       "description": "User historical game matches"
+    },
+    "/users/{userId}/friends/{friendId}": {
+      "schema": "Friend",
+      "description": "User friends"
+    },
+    "/nicknames/{nicknameLower}": {
+      "schema": "Nickname",
+      "description": "Unique nickname registry"
     },
     "/rooms/{roomId}": {
       "schema": "RoomDoc",

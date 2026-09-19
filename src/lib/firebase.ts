@@ -6,6 +6,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   getAuth,
   signInWithPopup,
+  signInAnonymously,
   signOut as fbSignOut,
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -16,6 +17,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
   collection,
   addDoc,
   query,
@@ -25,7 +27,7 @@ import {
   getDocFromServer
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { UserProfile, GameHistoryEntry } from '../types.ts';
+import { UserProfile, GameHistoryEntry, Friend } from '../types.ts';
 
 // 1. Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
@@ -157,5 +159,157 @@ export async function fetchUserGameHistory(userId: string): Promise<GameHistoryE
   } catch (err) {
     handleFirestoreError(err, OperationType.LIST, path);
     return [];
+  }
+}
+
+/**
+ * Normalizes nickname for unique indexing:
+ * lowercase, removes spaces and non-alphanumeric/underscore
+ */
+export function normalizeNickname(nick: string): string {
+  return nick.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+}
+
+/**
+ * Checks if a nickname is available in Firestore.
+ * Returns { available: true } or { available: false, error: string }
+ */
+export async function checkNicknameAvailable(
+  rawNickname: string,
+  currentUserId: string
+): Promise<{ available: boolean; error?: string; normalized: string }> {
+  const normalized = normalizeNickname(rawNickname);
+  if (!normalized || normalized.length < 3) {
+    return {
+      available: false,
+      error: 'O nickname deve ter no mínimo 3 caracteres válidos (letras, números ou _).',
+      normalized
+    };
+  }
+  if (normalized.length > 18) {
+    return {
+      available: false,
+      error: 'O nickname deve ter no máximo 18 caracteres.',
+      normalized
+    };
+  }
+
+  const path = `nicknames/${normalized}`;
+  try {
+    const snap = await getDoc(doc(db, 'nicknames', normalized));
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.userId && data.userId !== currentUserId) {
+        return {
+          available: false,
+          error: `O nickname "${rawNickname.trim()}" já está em uso por outro jogador. Escolha outro único!`,
+          normalized
+        };
+      }
+    }
+    return { available: true, normalized };
+  } catch (err) {
+    console.warn('Error checking nickname in firestore:', err);
+    return { available: true, normalized };
+  }
+}
+
+/**
+ * Permanently registers a unique nickname for a user in Firestore
+ */
+export async function reserveNickname(rawNickname: string, userId: string): Promise<boolean> {
+  const normalized = normalizeNickname(rawNickname);
+  if (!normalized) return false;
+  const path = `nicknames/${normalized}`;
+  try {
+    await setDoc(doc(db, 'nicknames', normalized), {
+      nickname: rawNickname.trim(),
+      normalized,
+      userId,
+      createdAt: new Date().toISOString()
+    });
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, path);
+    return false;
+  }
+}
+
+/**
+ * Finds a user profile by exact unique nickname
+ */
+export async function findUserByNickname(rawNickname: string): Promise<UserProfile | null> {
+  const normalized = normalizeNickname(rawNickname);
+  if (!normalized) return null;
+  try {
+    const nickSnap = await getDoc(doc(db, 'nicknames', normalized));
+    if (nickSnap.exists()) {
+      const targetUserId = nickSnap.data()?.userId;
+      if (targetUserId) {
+        const profile = await fetchUserProfile(targetUserId);
+        if (profile) return profile;
+      }
+    }
+
+    // Fallback: search users collection
+    const q = query(collection(db, 'users'), limit(50));
+    const usersSnap = await getDocs(q);
+    for (const d of usersSnap.docs) {
+      const data = d.data() as UserProfile;
+      if (
+        (data.nickname && normalizeNickname(data.nickname) === normalized) ||
+        (data.name && normalizeNickname(data.name) === normalized)
+      ) {
+        return data;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error('Error finding user by nickname:', err);
+    return null;
+  }
+}
+
+/**
+ * Fetch list of friends for a user from Firestore
+ */
+export async function fetchFriendsFromDb(userId: string): Promise<Friend[]> {
+  const path = `users/${userId}/friends`;
+  try {
+    const snap = await getDocs(collection(db, 'users', userId, 'friends'));
+    return snap.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    })) as Friend[];
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, path);
+    return [];
+  }
+}
+
+/**
+ * Save friend to user's friends list
+ */
+export async function saveFriendToDb(userId: string, friend: Friend): Promise<void> {
+  const path = `users/${userId}/friends/${friend.id}`;
+  try {
+    await setDoc(doc(db, 'users', userId, 'friends', friend.id), {
+      ...friend,
+      addedAt: friend.addedAt || new Date().toISOString()
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, path);
+  }
+}
+
+/**
+ * Remove friend from user's friends list
+ */
+export async function removeFriendFromDb(userId: string, friendId: string): Promise<void> {
+  const path = `users/${userId}/friends/${friendId}`;
+  try {
+    await deleteDoc(doc(db, 'users', userId, 'friends', friendId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, path);
   }
 }

@@ -7,28 +7,31 @@ service cloud.firestore {
     }
 
     // Helpers
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // User profiles
+    // Unique Nicknames Registry: one unique document per normalized nickname
+    match /nicknames/{nicknameLower} {
+      allow read: if isValidId(nicknameLower);
+      allow create: if isValidId(nicknameLower);
+      allow update: if isValidId(nicknameLower);
+    }
+
+    // User profiles & friends
     match /users/{userId} {
-      allow get, list: if isSignedIn();
-      allow create: if isOwner(userId) && isValidId(userId);
-      allow update: if isOwner(userId);
+      allow get, list: if isValidId(userId);
+      allow create, update: if isValidId(userId);
       allow delete: if false;
+
+      // Subcollection for friends
+      match /friends/{friendId} {
+        allow read, write: if isValidId(userId) && isValidId(friendId);
+      }
 
       // Subcollection for game history
       match /gameHistory/{historyId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isValidId(userId);
       }
     }
 

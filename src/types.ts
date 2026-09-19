@@ -133,6 +133,16 @@ export interface PlayerAnswer {
   guessedTarget?: boolean;
 }
 
+export interface Friend {
+  id: string; // friend user ID
+  nickname: string;
+  name: string;
+  avatar: string;
+  avatarColor?: string;
+  level?: number;
+  addedAt: string;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -179,6 +189,7 @@ export interface RoomState {
   hostId: string;
   hostLeft?: boolean;
   closedReason?: string;
+  kickedPlayerIds?: string[];
   settings: RoomSettings;
   players: Player[];
   currentRoundIndex: number;
@@ -205,6 +216,7 @@ export interface UserProfile {
   avatarColor?: string;
   photoURL?: string;
   hasConfiguredProfile?: boolean;
+  nicknameLocked?: boolean;
   level: number;
   xp: number;
   gamesPlayed: number;
@@ -212,6 +224,7 @@ export interface UserProfile {
   totalCorrectWords: number;
   fastestResponseMs: number;
   achievements: string[];
+  friends?: Friend[];
   email?: string;
   isGoogleAuth?: boolean;
 }

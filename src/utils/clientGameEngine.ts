@@ -237,33 +237,21 @@ class ClientGameEngine {
     return null;
   }
 
-  public addBot(): RoomState | null {
+  public kickPlayer(targetPlayerId: string): RoomState | null {
     if (!this.activeRoom) return null;
-    const botNames = ['Capivara Esperta', 'Mestre Aurélio', 'Zeca Pagodinho', 'Carmen Miranda', 'Gabi Palavreira', 'Professor Pasquale'];
-    const botAvatars = ['🤖', '🦊', '🦁', '🦉', '⚡', '☕'];
-    const usedNames = new Set(this.activeRoom.players.map(p => p.name));
-    const available = botNames.filter(n => !usedNames.has(n));
-    const name = available[Math.floor(Math.random() * available.length)] || `Bot ${this.activeRoom.players.length}`;
-    const avatar = botAvatars[Math.floor(Math.random() * botAvatars.length)];
+    // Host cannot be kicked
+    if (targetPlayerId === this.activeRoom.hostId) return null;
 
-    const botId = 'bot_' + Math.random().toString(36).substring(2, 7);
-    const botColors = ['indigo', 'violet', 'fuchsia', 'cyan', 'amber'];
-    const bot: Player = {
-      id: botId,
-      name,
-      nickname: name,
-      avatar,
-      avatarColor: botColors[Math.floor(Math.random() * botColors.length)],
-      isHost: false,
-      isBot: true,
-      score: 0,
-      roundScore: 0,
-      hasAnswered: false,
-      isReady: true
-    };
+    this.activeRoom.players = this.activeRoom.players.filter(p => p.id !== targetPlayerId);
+    if (!this.activeRoom.kickedPlayerIds) {
+      this.activeRoom.kickedPlayerIds = [];
+    }
+    if (!this.activeRoom.kickedPlayerIds.includes(targetPlayerId)) {
+      this.activeRoom.kickedPlayerIds.push(targetPlayerId);
+    }
 
-    this.activeRoom.players.push(bot);
     this.notify('room:update', { room: this.activeRoom });
+    this.notify('player:kicked', { playerId: targetPlayerId });
     this.syncToFirestore(this.activeRoom);
     return this.activeRoom;
   }
