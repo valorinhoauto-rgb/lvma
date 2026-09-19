@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with game progression and level stats",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 50 },
+        "email": { "type": "string", "maxLength": 120 },
+        "avatar": { "type": "string", "maxLength": 10 },
+        "xp": { "type": "number" },
+        "level": { "type": "number" },
+        "gamesPlayed": { "type": "number" },
+        "gamesWon": { "type": "number" },
+        "totalCorrectWords": { "type": "number" },
+        "achievements": { "type": "array", "description": "List of unlocked achievement IDs" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "xp", "level"]
+    },
+    "GameHistory": {
+      "title": "GameHistory",
+      "description": "Historical record of completed matches",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "gameMode": { "type": "string", "maxLength": 50 },
+        "totalRounds": { "type": "number" },
+        "score": { "type": "number" },
+        "rank": { "type": "number" },
+        "totalPlayers": { "type": "number" },
+        "playedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "gameMode", "score"]
+    },
+    "RoomDoc": {
+      "title": "RoomDoc",
+      "description": "Multiplayer game room document for real-time synchronization",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string", "maxLength": 20 },
+        "hostId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "maxLength": 30 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["roomId", "hostId", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/users/{userId}/gameHistory/{historyId}": {
+      "schema": "GameHistory",
+      "description": "User historical game matches"
+    },
+    "/rooms/{roomId}": {
+      "schema": "RoomDoc",
+      "description": "Multiplayer room state"
+    }
+  }
+}
