@@ -42,12 +42,12 @@ export const Header: React.FC<HeaderProps> = ({
           className="flex items-center gap-2.5 text-left group transition-transform active:scale-95"
         >
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-pink-400 flex items-center justify-center font-black text-slate-950 text-base tracking-tighter shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/30 transition-shadow">
-            LV
+            M
           </div>
           <div>
             <div className="flex items-center gap-1.5 leading-none">
               <span className="font-black text-xl tracking-wider bg-gradient-to-r from-white via-emerald-200 to-teal-300 bg-clip-text text-transparent font-['Outfit']">
-                LVMA
+                MALM
               </span>
             </div>
             <p className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">STOP • TERMO • JUICE</p>

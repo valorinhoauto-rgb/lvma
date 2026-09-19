@@ -21,7 +21,7 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({ isOpen, onClose 
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <HelpCircle className="w-5 h-5 text-amber-400" />
-            <h2 className="font-extrabold text-white text-base">Como Jogar no LVMA</h2>
+            <h2 className="font-extrabold text-white text-base">Como Jogar no MALM</h2>
           </div>
           <button
             onClick={onClose}

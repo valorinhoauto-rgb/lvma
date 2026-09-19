@@ -48,11 +48,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       <div className="text-center space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>LVMA • STOP, TERMO & Desafio Juice</span>
+          <span>MALM • STOP, TERMO & Desafio Juice</span>
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white font-['Outfit']">
-          <span className="bg-gradient-to-r from-white via-emerald-200 to-teal-300 bg-clip-text text-transparent">LVMA</span>
+          <span className="bg-gradient-to-r from-white via-emerald-200 to-teal-300 bg-clip-text text-transparent">MALM</span>
         </h1>
 
         <p className="text-slate-400 text-xs sm:text-sm max-w-xl mx-auto font-normal">
