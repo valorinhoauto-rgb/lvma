@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { Trophy, Users, CheckCircle2, XCircle, EyeOff, Sparkles, Timer } from 'lucide-react';
 import { LetterStatus, Player, PlayerAnswer, RoundConfig, TermoGuessResult } from '../types.ts';
 import { sound } from '../utils/audio.ts';
+import { PlayerAvatar } from './PlayerAvatar.tsx';
 
 interface MultiplayerTermoViewProps {
   round: RoundConfig;
@@ -161,7 +162,11 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
         <div className={`${opponents.length > 0 ? 'lg:col-span-7' : 'max-w-xl mx-auto w-full'} bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl`}>
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
             <div className="flex items-center gap-2.5">
-              <span className="text-2xl">{myPlayer?.avatar || '👤'}</span>
+              <PlayerAvatar
+                avatar={myPlayer?.avatar || '👤'}
+                avatarColor={myPlayer?.avatarColor}
+                size="md"
+              />
               <div>
                 <div className="text-sm font-black text-white flex items-center gap-2">
                   <span>Seu Tabuleiro (Você)</span>
@@ -326,7 +331,11 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
                       {/* Header do Adversário */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-xl">{opponent.avatar}</span>
+                          <PlayerAvatar
+                            avatar={opponent.avatar}
+                            avatarColor={opponent.avatarColor}
+                            size="sm"
+                          />
                           <div>
                             <div className="text-xs font-bold text-white flex items-center gap-1.5">
                               <span>{opponent.name}</span>

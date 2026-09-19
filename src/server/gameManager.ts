@@ -98,12 +98,24 @@ export class Room {
   }
 
   public removePlayer(playerId: string) {
+    if (this.state.hostId === playerId) {
+      // O anfitrião saiu da sala: encerra a sala e chuta os outros jogadores para o menu principal
+      this.state.status = 'closed';
+      this.broadcast('room:host_left', { reason: 'O anfitrião saiu da sala. A partida foi encerrada.' });
+      this.broadcast('room:closed', { reason: 'O anfitrião saiu da sala. A partida foi encerrada.' });
+      this.clearAllTimers();
+      for (const client of this.clients.values()) {
+        try {
+          client.close();
+        } catch {}
+      }
+      this.clients.clear();
+      gameManager.removeRoom(this.state.roomId);
+      return;
+    }
+
     this.state.players = this.state.players.filter(p => p.id !== playerId);
     this.clients.delete(playerId);
-    if (this.state.hostId === playerId && this.state.players.length > 0) {
-      this.state.hostId = this.state.players[0].id;
-      this.state.players[0].isHost = true;
-    }
     this.broadcastState();
   }
 

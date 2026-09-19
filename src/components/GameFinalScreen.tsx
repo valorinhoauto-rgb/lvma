@@ -8,6 +8,7 @@ import { Trophy, Medal, RotateCcw, Home, Sparkles, Award } from 'lucide-react';
 import { RoomState, UserProfile } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { addXpToProfile, unlockAchievement } from '../utils/profile.ts';
+import { PlayerAvatar } from './PlayerAvatar.tsx';
 
 interface GameFinalScreenProps {
   room: RoomState;
@@ -71,7 +72,13 @@ export const GameFinalScreen: React.FC<GameFinalScreenProps> = ({
         {/* 2nd Place */}
         {sortedPlayers[1] && (
           <div className="flex flex-col items-center flex-1 max-w-[130px]">
-            <span className="text-3xl mb-1">{sortedPlayers[1].avatar}</span>
+            <div className="mb-2">
+              <PlayerAvatar
+                avatar={sortedPlayers[1].avatar}
+                avatarColor={sortedPlayers[1].avatarColor}
+                size="lg"
+              />
+            </div>
             <div className="text-xs font-bold text-white truncate max-w-full">{sortedPlayers[1].name}</div>
             <div className="text-[11px] text-slate-400 font-mono mb-2">{sortedPlayers[1].score} pts</div>
             <div className="w-full bg-slate-800 border-t-2 border-slate-400 rounded-t-2xl h-24 flex items-center justify-center font-black text-slate-400 text-xl shadow-lg">
@@ -83,8 +90,14 @@ export const GameFinalScreen: React.FC<GameFinalScreenProps> = ({
         {/* 1st Place */}
         {sortedPlayers[0] && (
           <div className="flex flex-col items-center flex-1 max-w-[150px]">
-            <span className="text-4xl mb-1 animate-bounce">👑</span>
-            <span className="text-4xl mb-1">{sortedPlayers[0].avatar}</span>
+            <span className="text-3xl mb-1 animate-bounce">👑</span>
+            <div className="mb-2">
+              <PlayerAvatar
+                avatar={sortedPlayers[0].avatar}
+                avatarColor={sortedPlayers[0].avatarColor}
+                size="xl"
+              />
+            </div>
             <div className="text-sm font-extrabold text-amber-300 truncate max-w-full">{sortedPlayers[0].name}</div>
             <div className="text-xs text-amber-400/90 font-mono font-bold mb-2">{sortedPlayers[0].score} pts</div>
             <div className="w-full bg-gradient-to-t from-amber-600/30 to-amber-500/20 border-t-2 border-amber-400 rounded-t-2xl h-36 flex items-center justify-center font-black text-amber-400 text-3xl shadow-xl shadow-amber-500/20">
@@ -96,7 +109,13 @@ export const GameFinalScreen: React.FC<GameFinalScreenProps> = ({
         {/* 3rd Place */}
         {sortedPlayers[2] && (
           <div className="flex flex-col items-center flex-1 max-w-[130px]">
-            <span className="text-3xl mb-1">{sortedPlayers[2].avatar}</span>
+            <div className="mb-2">
+              <PlayerAvatar
+                avatar={sortedPlayers[2].avatar}
+                avatarColor={sortedPlayers[2].avatarColor}
+                size="md"
+              />
+            </div>
             <div className="text-xs font-bold text-white truncate max-w-full">{sortedPlayers[2].name}</div>
             <div className="text-[11px] text-slate-400 font-mono mb-2">{sortedPlayers[2].score} pts</div>
             <div className="w-full bg-slate-800 border-t-2 border-amber-700/60 rounded-t-2xl h-16 flex items-center justify-center font-black text-amber-700 text-xl shadow-lg">
@@ -145,7 +164,11 @@ export const GameFinalScreen: React.FC<GameFinalScreenProps> = ({
                 <span className="font-mono font-bold text-slate-500 w-5 text-center text-sm">
                   #{idx + 1}
                 </span>
-                <span className="text-xl">{p.avatar}</span>
+                <PlayerAvatar
+                  avatar={p.avatar}
+                  avatarColor={p.avatarColor}
+                  size="sm"
+                />
                 <span className="font-bold text-sm text-white">{p.name}</span>
               </div>
               <div className="font-mono font-black text-base text-emerald-400">

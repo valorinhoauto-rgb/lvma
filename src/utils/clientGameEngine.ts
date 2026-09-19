@@ -86,30 +86,40 @@ class ClientGameEngine {
       let prevRoundIndex: number = -1;
 
       this.firestoreUnsub = onSnapshot(roomRef, (snap) => {
-        if (snap.exists()) {
-          const remoteState = snap.data() as RoomState;
-          if (remoteState) {
-            const statusChanged = prevStatus !== remoteState.status;
-            const roundChanged = prevRoundIndex !== remoteState.currentRoundIndex;
-            prevStatus = remoteState.status;
-            prevRoundIndex = remoteState.currentRoundIndex;
+        if (!snap.exists()) {
+          this.notify('room:host_left', { reason: 'A sala foi encerrada pelo anfitrião.' });
+          this.leaveRoom();
+          return;
+        }
 
-            this.activeRoom = remoteState;
-            if (this.myPlayerId) {
-              this.isHost = remoteState.hostId === this.myPlayerId;
-            }
-            this.notify('room:update', { room: remoteState });
+        const remoteState = snap.data() as RoomState;
+        if (remoteState) {
+          if (remoteState.status === 'closed' || remoteState.hostLeft) {
+            this.notify('room:host_left', { reason: remoteState.closedReason || 'O anfitrião saiu da sala.' });
+            this.leaveRoom();
+            return;
+          }
 
-            if (statusChanged || roundChanged) {
-              if (remoteState.status === 'round_active' && remoteState.currentRound) {
-                this.notify('round:start', { round: remoteState.currentRound });
-              } else if (remoteState.status === 'round_voting') {
-                this.notify('round:voting_start', { answers: remoteState.roundAnswers });
-              } else if (remoteState.status === 'round_results') {
-                this.notify('round:end', { answers: remoteState.roundAnswers, players: remoteState.players });
-              } else if (remoteState.status === 'game_over') {
-                this.notify('game:end', { players: remoteState.players });
-              }
+          const statusChanged = prevStatus !== remoteState.status;
+          const roundChanged = prevRoundIndex !== remoteState.currentRoundIndex;
+          prevStatus = remoteState.status;
+          prevRoundIndex = remoteState.currentRoundIndex;
+
+          this.activeRoom = remoteState;
+          if (this.myPlayerId) {
+            this.isHost = remoteState.hostId === this.myPlayerId;
+          }
+          this.notify('room:update', { room: remoteState });
+
+          if (statusChanged || roundChanged) {
+            if (remoteState.status === 'round_active' && remoteState.currentRound) {
+              this.notify('round:start', { round: remoteState.currentRound });
+            } else if (remoteState.status === 'round_voting') {
+              this.notify('round:voting_start', { answers: remoteState.roundAnswers });
+            } else if (remoteState.status === 'round_results') {
+              this.notify('round:end', { answers: remoteState.roundAnswers, players: remoteState.players });
+            } else if (remoteState.status === 'game_over') {
+              this.notify('game:end', { players: remoteState.players });
             }
           }
         }
@@ -237,10 +247,13 @@ class ClientGameEngine {
     const avatar = botAvatars[Math.floor(Math.random() * botAvatars.length)];
 
     const botId = 'bot_' + Math.random().toString(36).substring(2, 7);
+    const botColors = ['indigo', 'violet', 'fuchsia', 'cyan', 'amber'];
     const bot: Player = {
       id: botId,
       name,
+      nickname: name,
       avatar,
+      avatarColor: botColors[Math.floor(Math.random() * botColors.length)],
       isHost: false,
       isBot: true,
       score: 0,
@@ -798,12 +811,34 @@ class ClientGameEngine {
     this.botTimers = [];
   }
 
-  public leaveRoom() {
+  public async leaveRoom() {
     this.clearTimers();
+    const currentRoom = this.activeRoom;
+    const currentId = this.myPlayerId;
+
     if (this.firestoreUnsub) {
       this.firestoreUnsub();
       this.firestoreUnsub = null;
     }
+
+    if (currentRoom && currentId) {
+      if (currentRoom.hostId === currentId) {
+        // O anfitrião saiu da sala: encerra a sala e notifica todos os outros jogadores
+        const closedState: RoomState = {
+          ...currentRoom,
+          status: 'closed',
+          hostLeft: true,
+          closedReason: 'O anfitrião saiu da sala. A partida foi encerrada.'
+        };
+        await this.syncToFirestore(closedState);
+        this.notify('room:host_left', { reason: 'O anfitrião saiu da sala. A partida foi encerrada.' });
+      } else {
+        // Jogador comum saindo: remove da lista da sala
+        currentRoom.players = currentRoom.players.filter(p => p.id !== currentId);
+        await this.syncToFirestore(currentRoom);
+      }
+    }
+
     this.activeRoom = null;
     this.isHost = false;
   }

@@ -7,6 +7,7 @@ import { Volume2, VolumeX, HelpCircle, BookOpen, User, Sparkles } from 'lucide-r
 import { sound } from '../utils/audio.ts';
 import { UserProfile } from '../types.ts';
 import { calculateLevel } from '../utils/profile.ts';
+import { PlayerAvatar } from './PlayerAvatar.tsx';
 
 interface HeaderProps {
   userProfile: UserProfile;
@@ -92,12 +93,18 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="btn-nav-profile"
             onClick={onOpenProfile}
-            className="flex items-center gap-2 pl-2 pr-3 py-1 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-full transition-colors group text-left"
+            className="flex items-center gap-2 pl-1.5 pr-3 py-1 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-full transition-colors group text-left cursor-pointer"
           >
-            <span className="text-lg leading-none">{userProfile.avatar}</span>
+            <PlayerAvatar
+              avatar={userProfile.avatar}
+              avatarColor={userProfile.avatarColor}
+              size="sm"
+            />
             <div className="hidden sm:block">
               <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-xs font-bold text-white max-w-[90px] truncate">{userProfile.name}</span>
+                <span className="text-xs font-bold text-white max-w-[100px] truncate">
+                  {userProfile.nickname || userProfile.name}
+                </span>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono font-bold">
                   Nv.{levelInfo.level}
                 </span>

@@ -11,6 +11,7 @@ import { clientGameEngine } from '../utils/clientGameEngine.ts';
 export interface ChatMessage {
   senderName: string;
   avatar: string;
+  avatarColor?: string;
   text: string;
   timestamp: number;
 }
@@ -20,6 +21,7 @@ export function useGameSocket(userProfile: UserProfile) {
   const [connected, setConnected] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [lastValidationResult, setLastValidationResult] = useState<any>(null);
+  const [hostLeftMessage, setHostLeftMessage] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<any>(null);
   const currentRoomIdRef = useRef<string | null>(null);
@@ -52,6 +54,11 @@ export function useGameSocket(userProfile: UserProfile) {
         }
       } else if (event === 'game:end') {
         sound.playVictory();
+      } else if (event === 'room:host_left' || event === 'room:closed') {
+        sound.playError();
+        setHostLeftMessage(payload?.reason || 'O anfitrião saiu da sala. A partida foi encerrada.');
+        setRoom(null);
+        setChatMessages([]);
       } else if (event === 'chat:message') {
         setChatMessages((prev) => {
           if (prev.some(m => m.timestamp === payload.timestamp && m.senderName === payload.senderName)) {
@@ -118,6 +125,17 @@ export function useGameSocket(userProfile: UserProfile) {
             }
           } else if (data.event === 'game:end') {
             sound.playVictory();
+          } else if (data.event === 'room:host_left' || data.event === 'room:closed') {
+            sound.playError();
+            setHostLeftMessage(data.reason || 'O anfitrião saiu da sala. A partida foi encerrada.');
+            currentRoomIdRef.current = null;
+            if (wsRef.current) {
+              wsRef.current.close();
+              wsRef.current = null;
+            }
+            clientGameEngine.leaveRoom();
+            setRoom(null);
+            setChatMessages([]);
           } else if (data.event === 'chat:message') {
             setChatMessages((prev) => [...prev.slice(-40), data]);
           }
@@ -469,10 +487,20 @@ export function useGameSocket(userProfile: UserProfile) {
 
   // Leave room
   const leaveRoom = () => {
+    const rId = currentRoomIdRef.current || room?.roomId;
     currentRoomIdRef.current = null;
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
+    }
+    if (rId) {
+      try {
+        fetch(`/api/rooms/${rId}/leave`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerId: userProfile.id })
+        }).catch(() => {});
+      } catch {}
     }
     if (useClientEngineRef.current) {
       clientGameEngine.leaveRoom();
@@ -487,6 +515,8 @@ export function useGameSocket(userProfile: UserProfile) {
     connected,
     chatMessages,
     lastValidationResult,
+    hostLeftMessage,
+    clearHostLeftMessage: () => setHostLeftMessage(null),
     createRoom,
     joinRoom,
     addBot,

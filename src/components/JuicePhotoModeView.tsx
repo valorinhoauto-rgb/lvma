@@ -11,6 +11,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Clock, CheckCircle2, HelpCircle, Send, Users, Flame, XCircle, Sparkles, Award, ShieldCheck } from 'lucide-react';
 import { JuiceGuessResult, Player, RoundConfig } from '../types.ts';
 import { sound } from '../utils/audio.ts';
+import { PlayerAvatar } from './PlayerAvatar.tsx';
 
 interface JuicePhotoModeViewProps {
   round: RoundConfig;
@@ -349,7 +350,11 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
                   : 'bg-slate-950/40 border-slate-800 text-slate-400'
               }`}
             >
-              <span className="text-xl">{p.avatar}</span>
+              <PlayerAvatar
+                avatar={p.avatar}
+                avatarColor={p.avatarColor}
+                size="xs"
+              />
               <div className="truncate text-xs font-bold text-white flex-1">{p.name}</div>
               {p.hasAnswered ? (
                 <div className="flex items-center gap-1 text-emerald-400 text-[10px] font-bold">

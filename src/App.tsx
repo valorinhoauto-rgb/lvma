@@ -42,6 +42,8 @@ export default function App() {
     connected,
     chatMessages,
     lastValidationResult,
+    hostLeftMessage,
+    clearHostLeftMessage,
     createRoom,
     joinRoom,
     addBot,
@@ -289,6 +291,20 @@ export default function App() {
 
       {/* Main View Container */}
       <main className="flex-1 flex flex-col justify-start">
+        {hostLeftMessage && (
+          <div className="max-w-lg mx-auto mt-4 px-4 py-3 bg-amber-500/20 border border-amber-500 text-amber-200 rounded-xl text-xs font-bold text-center flex items-center justify-between gap-3 shadow-lg shadow-amber-950/40 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="text-base">👋</span>
+              <span>{hostLeftMessage}</span>
+            </div>
+            <button
+              onClick={clearHostLeftMessage}
+              className="px-2 py-0.5 rounded bg-amber-500/30 hover:bg-amber-500/50 text-amber-100 text-[11px] transition-colors"
+            >
+              OK
+            </button>
+          </div>
+        )}
         {joinAlert && (
           <div className="max-w-md mx-auto mt-4 px-4 py-2.5 bg-rose-500/20 border border-rose-500 text-rose-300 rounded-xl text-xs font-bold text-center">
             {joinAlert}

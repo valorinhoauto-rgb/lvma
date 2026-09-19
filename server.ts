@@ -235,6 +235,19 @@ async function startServer() {
     res.json({ success: true, room: room.state });
   });
 
+  // Leave room
+  app.post('/api/rooms/:id/leave', (req, res) => {
+    const room = gameManager.getRoom(req.params.id);
+    if (!room) {
+      return res.status(404).json({ error: 'Sala não encontrada.' });
+    }
+    const { playerId } = req.body;
+    if (playerId) {
+      room.removePlayer(playerId);
+    }
+    res.json({ success: true });
+  });
+
   // Add bot to room
   app.post('/api/rooms/:id/bot', (req, res) => {
     const room = gameManager.getRoom(req.params.id);

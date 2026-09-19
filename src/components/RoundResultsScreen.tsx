@@ -7,6 +7,7 @@ import React from 'react';
 import { Check, X, Sparkles, Zap, ArrowRight, BookOpen, Crown } from 'lucide-react';
 import { Player, PlayerAnswer, RoundConfig, RoomState } from '../types.ts';
 import { sound } from '../utils/audio.ts';
+import { PlayerAvatar } from './PlayerAvatar.tsx';
 
 interface RoundResultsScreenProps {
   room: RoomState;
@@ -162,7 +163,11 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-xl shrink-0">{player.avatar}</span>
+                  <PlayerAvatar
+                    avatar={player.avatar}
+                    avatarColor={player.avatarColor}
+                    size="sm"
+                  />
                   <div className="min-w-0">
                     <div className="text-sm font-bold text-white flex items-center gap-1.5 truncate">
                       <span>{player.name}</span>

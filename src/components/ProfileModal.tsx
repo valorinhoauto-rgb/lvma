@@ -3,11 +3,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, User, Trophy, Zap, Sparkles, BookOpen, Target, Crown, Check, Save, LogIn, LogOut, History, Award, AlertCircle } from 'lucide-react';
+import { X, User, Trophy, Zap, Sparkles, BookOpen, Target, Crown, Check, Save, LogIn, LogOut, History, Award, AlertCircle, Dice5, ShieldCheck } from 'lucide-react';
 import { GameHistoryEntry, UserProfile } from '../types.ts';
 import { ACHIEVEMENTS_LIST, calculateLevel, saveUserProfile } from '../utils/profile.ts';
 import { sound } from '../utils/audio.ts';
-import { auth, loginWithGoogle, logout, fetchUserGameHistory, syncUserProfileToDb } from '../lib/firebase.ts';
+import { auth, loginWithGoogle, logout, fetchUserGameHistory, syncUserProfileToDb, fetchUserProfile } from '../lib/firebase.ts';
+import { AVATAR_CATEGORIES, AVATAR_COLOR_THEMES, generateRandomNickname, getSuggestedNickname } from '../utils/avatarData.ts';
+import { PlayerAvatar } from './PlayerAvatar.tsx';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -16,8 +18,6 @@ interface ProfileModalProps {
   onUpdateProfile: (updated: UserProfile) => void;
 }
 
-const AVATAR_OPTIONS = ['🦊', '🐻', '🦁', '🐼', '🐯', '🦉', '🐺', '🐬', '🦄', '🚀', '⚡', '👑'];
-
 export const ProfileModal: React.FC<ProfileModalProps> = ({
   isOpen,
   onClose,
@@ -25,16 +25,23 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onUpdateProfile
 }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'achievements'>('profile');
-  const [name, setName] = useState(userProfile.name);
+  const [name, setName] = useState(userProfile.nickname || userProfile.name);
   const [selectedAvatar, setSelectedAvatar] = useState(userProfile.avatar);
+  const [selectedColor, setSelectedColor] = useState(userProfile.avatarColor || 'emerald');
+  const [activeCategory, setActiveCategory] = useState(AVATAR_CATEGORIES[0].id);
+  const [useGooglePhoto, setUseGooglePhoto] = useState(
+    Boolean(userProfile.photoURL && userProfile.avatar === userProfile.photoURL)
+  );
   const [saved, setSaved] = useState(false);
   const [history, setHistory] = useState<GameHistoryEntry[]>([]);
   const [loadingAuth, setLoadingAuth] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    setName(userProfile.name);
+    setName(userProfile.nickname || userProfile.name);
     setSelectedAvatar(userProfile.avatar);
+    setSelectedColor(userProfile.avatarColor || 'emerald');
+    setUseGooglePhoto(Boolean(userProfile.photoURL && userProfile.avatar === userProfile.photoURL));
   }, [userProfile]);
 
   useEffect(() => {
@@ -49,19 +56,30 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const levelInfo = calculateLevel(userProfile.xp);
 
+  const handleRandomizeNick = () => {
+    sound.playClick();
+    setName(generateRandomNickname());
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    const cleanName = name.trim().replace(/\s+/g, '_');
+    if (!cleanName) return;
+
+    const finalAvatar = useGooglePhoto && userProfile.photoURL ? userProfile.photoURL : selectedAvatar;
 
     const updated: UserProfile = {
       ...userProfile,
-      name: name.trim(),
-      avatar: selectedAvatar
+      name: cleanName,
+      nickname: cleanName,
+      avatar: finalAvatar,
+      avatarColor: selectedColor,
+      hasConfiguredProfile: true
     };
     saveUserProfile(updated);
     syncUserProfileToDb(updated);
     onUpdateProfile(updated);
-    sound.playClick();
+    sound.playSuccess();
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -73,15 +91,28 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       sound.playClick();
       const fbUser = await loginWithGoogle();
       if (fbUser) {
-        const updated: UserProfile = {
-          ...userProfile,
-          id: fbUser.uid,
-          name: fbUser.displayName || userProfile.name,
-          avatar: userProfile.avatar,
-        };
-        saveUserProfile(updated);
-        await syncUserProfileToDb(updated);
-        onUpdateProfile(updated);
+        const remoteProfile = await fetchUserProfile(fbUser.uid);
+        if (remoteProfile) {
+          saveUserProfile(remoteProfile);
+          onUpdateProfile(remoteProfile);
+        } else {
+          const suggestedNick = getSuggestedNickname(fbUser.displayName || fbUser.email || '');
+          const updated: UserProfile = {
+            ...userProfile,
+            id: fbUser.uid,
+            name: suggestedNick,
+            nickname: suggestedNick,
+            email: fbUser.email || undefined,
+            photoURL: fbUser.photoURL || undefined,
+            avatar: userProfile.avatar,
+            avatarColor: selectedColor,
+            isGoogleAuth: true,
+            hasConfiguredProfile: true
+          };
+          saveUserProfile(updated);
+          await syncUserProfileToDb(updated);
+          onUpdateProfile(updated);
+        }
         sound.playSuccess();
       }
     } catch (err: unknown) {
@@ -107,6 +138,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       console.error('Logout error:', err);
     }
   };
+
+  const currentDisplayAvatar = useGooglePhoto && userProfile.photoURL ? userProfile.photoURL : selectedAvatar;
+  const currentCatObj = AVATAR_CATEGORIES.find(c => c.id === activeCategory) || AVATAR_CATEGORIES[0];
 
   const getAchievementIcon = (iconName: string) => {
     switch (iconName) {
@@ -247,15 +281,22 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 </div>
               )}
 
-              {/* Level & XP Card */}
+              {/* Level & XP Card with Live PlayerAvatar */}
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-3xl shadow-lg shadow-emerald-500/20">
-                  {selectedAvatar}
-                </div>
+                <PlayerAvatar
+                  avatar={currentDisplayAvatar}
+                  avatarColor={selectedColor}
+                  size="xl"
+                />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-sm text-white">Nível {levelInfo.level}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-sm text-white">{name.trim() || 'Jogador'}</span>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.5 rounded font-mono">
+                        Nv. {levelInfo.level}
+                      </span>
+                    </div>
                     <span className="text-xs text-slate-400 font-mono font-medium">
                       {levelInfo.currentLevelXp} / {levelInfo.nextLevelXp} XP
                     </span>
@@ -275,45 +316,173 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               {/* Edit Identity Form */}
               <form onSubmit={handleSave} className="space-y-4">
                 <div>
-                  <label className="text-xs text-slate-400 font-semibold block mb-1.5">Nome de Exibição</label>
-                  <input
-                    type="text"
-                    maxLength={20}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs text-slate-400 font-semibold block mb-1.5">Escolha seu Avatar</label>
-                  <div className="grid grid-cols-6 gap-2">
-                    {AVATAR_OPTIONS.map((av) => (
-                      <button
-                        key={av}
-                        type="button"
-                        onClick={() => {
-                          sound.playClick();
-                          setSelectedAvatar(av);
-                        }}
-                        className={`h-11 rounded-xl text-xl flex items-center justify-center border transition-all ${
-                          selectedAvatar === av
-                            ? 'bg-emerald-500/20 border-emerald-500 scale-105 shadow-md shadow-emerald-500/20'
-                            : 'bg-slate-950 border-slate-800 hover:bg-slate-800'
-                        }`}
-                      >
-                        {av}
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Nickname na Partida</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleRandomizeNick}
+                      className="text-[11px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Dice5 className="w-3.5 h-3.5" />
+                      <span>Sugerir Aleatório</span>
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      maxLength={18}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Ex: RaposaVeloz, Leo_Stop, Bia"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-bold pr-14"
+                    />
+                    <span className="absolute right-3 top-2.5 text-[11px] text-slate-500 font-mono">
+                      {name.length}/18
+                    </span>
                   </div>
                 </div>
 
+                {/* Google Photo Toggle (if available) */}
+                {userProfile.photoURL && (
+                  <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <img
+                        src={userProfile.photoURL}
+                        alt="Google"
+                        className="w-7 h-7 rounded-full border border-slate-700"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div>
+                        <div className="text-xs font-bold text-white">Usar Foto da Conta Google</div>
+                        <div className="text-[10px] text-slate-400">Exibir sua foto oficial nas partidas</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          setUseGooglePhoto(false);
+                          if (selectedAvatar === userProfile.photoURL) setSelectedAvatar('🦊');
+                        }}
+                        className={`px-2.5 py-1 text-xs rounded-lg font-bold transition-all ${
+                          !useGooglePhoto
+                            ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                            : 'bg-slate-900 text-slate-400 hover:bg-slate-800'
+                        }`}
+                      >
+                        Ícone
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          setUseGooglePhoto(true);
+                          setSelectedAvatar(userProfile.photoURL || '🦊');
+                        }}
+                        className={`px-2.5 py-1 text-xs rounded-lg font-bold transition-all ${
+                          useGooglePhoto
+                            ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                            : 'bg-slate-900 text-slate-400 hover:bg-slate-800'
+                        }`}
+                      >
+                        Foto
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Avatar Color Themes */}
+                <div>
+                  <label className="text-xs text-slate-400 font-semibold block mb-1.5">
+                    Cor de Fundo do Avatar
+                  </label>
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+                    {AVATAR_COLOR_THEMES.map((theme) => {
+                      const isSelected = selectedColor === theme.id;
+                      return (
+                        <button
+                          key={theme.id}
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setSelectedColor(theme.id);
+                          }}
+                          className={`h-9 rounded-xl flex items-center justify-center border transition-all ${theme.bgGradient} ${
+                            isSelected
+                              ? 'border-white scale-105 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400'
+                              : 'border-slate-800/80 opacity-70 hover:opacity-100'
+                          }`}
+                          title={theme.name}
+                        >
+                          {isSelected && <Check className="w-3.5 h-3.5 text-white filter drop-shadow" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Avatar Icon Grid (When not using Google Photo) */}
+                {!useGooglePhoto && (
+                  <div>
+                    <label className="text-xs text-slate-400 font-semibold block mb-1.5">
+                      Escolha seu Ícone
+                    </label>
+
+                    {/* Category Tabs */}
+                    <div className="flex gap-1 overflow-x-auto pb-1.5 scrollbar-none mb-2">
+                      {AVATAR_CATEGORIES.map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setActiveCategory(cat.id);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 ${
+                            activeCategory === cat.id
+                              ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
+                              : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-850'
+                          }`}
+                        >
+                          <span>{cat.icon}</span>
+                          <span>{cat.name}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Category Avatars Grid */}
+                    <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 p-2 bg-slate-950/80 border border-slate-800 rounded-2xl max-h-40 overflow-y-auto">
+                      {currentCatObj.avatars.map((av) => (
+                        <button
+                          key={av}
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setSelectedAvatar(av);
+                          }}
+                          className={`h-10 rounded-xl text-xl flex items-center justify-center border transition-all ${
+                            selectedAvatar === av
+                              ? 'bg-emerald-500/20 border-emerald-500 scale-105 shadow-md shadow-emerald-500/20'
+                              : 'bg-slate-900 border-slate-800 hover:bg-slate-800'
+                          }`}
+                        >
+                          {av}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
+                  className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-500/20"
                 >
                   {saved ? <Check className="w-4 h-4 text-slate-950" /> : <Save className="w-4 h-4" />}
-                  <span>{saved ? 'Salvo!' : 'Salvar Alterações'}</span>
+                  <span>{saved ? 'Salvo com Sucesso!' : 'Salvar Alterações'}</span>
                 </button>
               </form>
             </>

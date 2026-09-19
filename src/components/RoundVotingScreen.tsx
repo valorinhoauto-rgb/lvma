@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, X, ThumbsUp, ThumbsDown, Clock, ShieldCheck, HelpCircle, Sparkles } from 'lucide-react';
 import { Player, PlayerAnswer, RoomState } from '../types.ts';
 import { sound } from '../utils/audio.ts';
+import { PlayerAvatar } from './PlayerAvatar.tsx';
 
 interface RoundVotingScreenProps {
   room: RoomState;
@@ -142,8 +143,12 @@ export const RoundVotingScreen: React.FC<RoundVotingScreenProps> = ({
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   {/* Informações do Jogador e Resposta */}
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{player?.avatar || '👤'}</span>
+                    <div className="flex items-center gap-2.5">
+                      <PlayerAvatar
+                        avatar={player?.avatar || '👤'}
+                        avatarColor={player?.avatarColor}
+                        size="md"
+                      />
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-white text-sm">{player?.name || 'Jogador'}</span>

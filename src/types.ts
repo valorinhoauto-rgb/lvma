@@ -136,7 +136,10 @@ export interface PlayerAnswer {
 export interface Player {
   id: string;
   name: string;
+  nickname?: string;
   avatar: string;
+  avatarColor?: string;
+  photoURL?: string;
   isHost: boolean;
   isBot?: boolean;
   score: number;
@@ -160,11 +163,12 @@ export interface RoomSettings {
   juiceTheme?: JuiceThemeId;  // Tema selecionado para o modo Juice / Foto
 }
 
-export type RoomStatus = 'lobby' | 'countdown' | 'round_active' | 'round_voting' | 'round_results' | 'game_over';
+export type RoomStatus = 'lobby' | 'countdown' | 'round_active' | 'round_voting' | 'round_results' | 'game_over' | 'closed';
 
 export interface ChatMessage {
   senderName: string;
   avatar: string;
+  avatarColor?: string;
   text: string;
   timestamp: number;
 }
@@ -173,6 +177,8 @@ export interface RoomState {
   roomId: string;
   status: RoomStatus;
   hostId: string;
+  hostLeft?: boolean;
+  closedReason?: string;
   settings: RoomSettings;
   players: Player[];
   currentRoundIndex: number;
@@ -194,7 +200,11 @@ export interface RoomState {
 export interface UserProfile {
   id: string;
   name: string;
+  nickname?: string;
   avatar: string;
+  avatarColor?: string;
+  photoURL?: string;
+  hasConfiguredProfile?: boolean;
   level: number;
   xp: number;
   gamesPlayed: number;

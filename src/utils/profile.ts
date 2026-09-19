@@ -70,16 +70,23 @@ export function getOrCreateUserProfile(): UserProfile {
   const stored = localStorage.getItem('stop_termo_profile');
   if (stored) {
     try {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      if (!parsed.avatarColor) parsed.avatarColor = 'emerald';
+      if (!parsed.nickname) parsed.nickname = parsed.name;
+      return parsed;
     } catch {}
   }
 
   const randomAvatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
   const randomSuffix = Math.floor(100 + Math.random() * 900);
+  const defaultName = `Jogador${randomSuffix}`;
   const newProfile: UserProfile = {
     id: 'usr_' + Math.random().toString(36).substring(2, 9),
-    name: `Jogador${randomSuffix}`,
+    name: defaultName,
+    nickname: defaultName,
     avatar: randomAvatar,
+    avatarColor: 'emerald',
+    hasConfiguredProfile: false,
     level: 1,
     xp: 0,
     gamesPlayed: 0,

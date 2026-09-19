@@ -7,8 +7,12 @@
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
         "name": { "type": "string", "maxLength": 50 },
+        "nickname": { "type": "string", "maxLength": 30 },
         "email": { "type": "string", "maxLength": 120 },
-        "avatar": { "type": "string", "maxLength": 10 },
+        "avatar": { "type": "string", "maxLength": 500 },
+        "avatarColor": { "type": "string", "maxLength": 30 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "hasConfiguredProfile": { "type": "boolean" },
         "xp": { "type": "number" },
         "level": { "type": "number" },
         "gamesPlayed": { "type": "number" },
