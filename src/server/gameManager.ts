@@ -154,8 +154,8 @@ export class Room {
       };
       this.possibleCurrentWords = [];
     } else if (gameMode === 'termo_multiplayer') {
-      // Modo TERMO Coletivo: Escolhe palavra de 5 ou 6 letras garantida no dicionário
-      const targetLength = Math.random() < 0.6 ? 5 : 6;
+      // Modo TERMO Coletivo: Palavra de 5 letras clássica sem limite de tempo e 5 tentativas
+      const targetLength = 5;
       const comb = wordEngine.getRandomCombination({
         minLength: targetLength,
         maxLength: targetLength,
@@ -174,10 +174,10 @@ export class Room {
         letter: comb.letter,
         categoryId: comb.category,
         categoryName: cat ? cat.name : comb.category,
-        wordLength: chosenWord.length,
-        timeLimit: Math.max(45, timeLimit),
+        wordLength: 5,
+        timeLimit: 0, // Sem limite de tempo!
         startedAt: now,
-        endsAt: now + (Math.max(45, timeLimit) * 1000),
+        endsAt: 0,
         targetWord: chosenWord.normalized
       };
     } else {
@@ -229,15 +229,51 @@ export class Room {
     // Schedule bots answers
     this.scheduleBotAnswers(round);
 
-    // Schedule authoritative round end
-    const durationMs = (round.timeLimit * 1000) + 500;
-    this.timerHandle = setTimeout(() => {
-      this.handleRoundTimeUp();
-    }, durationMs);
+    // Schedule authoritative round end (exceto no modo termo_multiplayer, que não tem limite de tempo)
+    if (this.state.settings.gameMode !== 'termo_multiplayer') {
+      const durationMs = (round.timeLimit * 1000) + 500;
+      this.timerHandle = setTimeout(() => {
+        this.handleRoundTimeUp();
+      }, durationMs);
+    }
   }
 
   private scheduleBotAnswers(round: RoundConfig) {
     const bots = this.state.players.filter(p => p.isBot);
+
+    // Se for termo multiplayer, bots enviam de 2 a 5 palpites progressivos
+    if (this.state.settings.gameMode === 'termo_multiplayer') {
+      const targetWord = round.targetWord || '';
+      const candidateWords = this.possibleCurrentWords.filter(w => w.length === round.wordLength);
+
+      for (const bot of bots) {
+        const willWin = Math.random() < 0.85;
+        const totalGuesses = willWin ? Math.floor(Math.random() * 3) + 2 : 5; // 2 a 4 se vencer, 5 se esgotar
+
+        let delayMs = Math.floor(Math.random() * 4000) + 3500;
+        for (let g = 1; g <= totalGuesses; g++) {
+          const isWinningGuess = willWin && g === totalGuesses;
+          let guessWord = '';
+          if (isWinningGuess) {
+            guessWord = targetWord;
+          } else {
+            const picked = candidateWords[Math.floor(Math.random() * candidateWords.length)];
+            guessWord = picked ? picked.normalized : `${round.letter}PALAVRA`.slice(0, round.wordLength);
+          }
+
+          const currentDelay = delayMs;
+          const handle = setTimeout(() => {
+            if (this.state.status === 'round_active' && !bot.hasAnswered) {
+              this.submitAnswer(bot.id, guessWord);
+            }
+          }, currentDelay);
+          this.botTimerHandles.push(handle);
+          delayMs += Math.floor(Math.random() * 5000) + 4000;
+        }
+      }
+      return;
+    }
+
     for (const bot of bots) {
       const willAnswer = Math.random() < 0.90;
       if (!willAnswer) continue;
@@ -373,7 +409,7 @@ export class Room {
 
       const updatedGuesses = [...previousGuesses, guessObj];
       const hasWon = isCorrect;
-      const isOutOfTries = updatedGuesses.length >= 6;
+      const isOutOfTries = updatedGuesses.length >= 5;
 
       const answerRecord: PlayerAnswer = {
         playerId,
@@ -385,7 +421,8 @@ export class Room {
         isCommunityApproved: hasWon,
         votes: { yes: 0, no: 0, voterIds: {} },
         responseTimeMs,
-        points: hasWon ? Math.max(60, 220 - (updatedGuesses.length * 25)) : 0,
+        points: hasWon ? Math.max(50, (6 - updatedGuesses.length) * 35) : 0,
+        validationReason: hasWon ? `Acertou na tentativa ${updatedGuesses.length}/5!` : (isOutOfTries ? 'Esgotou as 5 tentativas.' : `Tentativa ${updatedGuesses.length}/5`),
         termoGuesses: updatedGuesses,
         guessedTarget: hasWon
       };
@@ -702,6 +739,17 @@ class GameManager {
 
     const room = new Room(code, hostPlayer, settings);
     this.rooms.set(code, room);
+    return room;
+  }
+
+  public createRoomWithId(code: string, hostPlayer: Player, settings?: Partial<RoomSettings>): Room {
+    const cleanCode = code.toUpperCase().trim();
+    const existing = this.rooms.get(cleanCode);
+    if (existing) {
+      return existing;
+    }
+    const room = new Room(cleanCode, hostPlayer, settings);
+    this.rooms.set(cleanCode, room);
     return room;
   }
 

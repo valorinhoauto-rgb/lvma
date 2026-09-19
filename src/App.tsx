@@ -213,6 +213,7 @@ export default function App() {
               currentUserId={userProfile.id}
               hasAnswered={Boolean(myPlayer?.hasAnswered)}
               guesses={room.roundAnswers[userProfile.id]?.termoGuesses || []}
+              roundAnswers={room.roundAnswers}
               onSubmitGuess={submitAnswer}
             />
           );

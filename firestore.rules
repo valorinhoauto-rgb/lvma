@@ -32,11 +32,9 @@ service cloud.firestore {
       }
     }
 
-    // Rooms (for multiplayer cloud persistence / Netlify sync)
+    // Rooms (for multiplayer cloud persistence and real-time sync across all players)
     match /rooms/{roomId} {
-      allow read: if true;
-      allow create, update: if isSignedIn() || resource == null;
-      allow delete: if false;
+      allow read, write: if isValidId(roomId);
     }
   }
 }

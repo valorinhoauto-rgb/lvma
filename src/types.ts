@@ -162,6 +162,13 @@ export interface RoomSettings {
 
 export type RoomStatus = 'lobby' | 'countdown' | 'round_active' | 'round_voting' | 'round_results' | 'game_over';
 
+export interface ChatMessage {
+  senderName: string;
+  avatar: string;
+  text: string;
+  timestamp: number;
+}
+
 export interface RoomState {
   roomId: string;
   status: RoomStatus;
@@ -174,6 +181,7 @@ export interface RoomState {
   votingEndsAt?: number;
   possibleAnswersCount?: number;
   sampleValidAnswers?: string[];
+  chatMessages?: ChatMessage[];
   history: {
     roundNumber: number;
     letter: string;

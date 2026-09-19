@@ -173,7 +173,7 @@ async function startServer() {
 
   // Create room
   app.post('/api/rooms', (req, res) => {
-    const { player, settings } = req.body;
+    const { player, settings, forcedRoomId } = req.body;
     if (!player || !player.id || !player.name) {
       return res.status(400).json({ error: 'Dados do jogador host são necessários.' });
     }
@@ -189,7 +189,9 @@ async function startServer() {
       isReady: true
     };
 
-    const room = gameManager.createRoom(hostPlayer, settings);
+    const room = forcedRoomId
+      ? gameManager.createRoomWithId(forcedRoomId, hostPlayer, settings)
+      : gameManager.createRoom(hostPlayer, settings);
     res.json({ roomId: room.id, room: room.state });
   });
 

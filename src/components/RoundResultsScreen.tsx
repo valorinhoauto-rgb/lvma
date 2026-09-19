@@ -80,6 +80,18 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
         </div>
       )}
 
+      {/* Secret Word Reveal (Termo Mode) */}
+      {round.targetWord && !round.photoChallenge && (
+        <div className="bg-slate-900 border border-emerald-500/40 rounded-2xl p-4 shadow-xl text-center space-y-1">
+          <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+            Palavra Secreta do Termo
+          </div>
+          <div className="text-2xl font-black text-white font-mono tracking-widest uppercase">
+            {round.targetWord}
+          </div>
+        </div>
+      )}
+
       {/* User's Personal Result Card */}
       {myAnswer ? (
         <div

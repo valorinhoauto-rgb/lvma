@@ -25,16 +25,16 @@ export function useGameSocket(userProfile: UserProfile) {
   const currentRoomIdRef = useRef<string | null>(null);
   const useClientEngineRef = useRef<boolean>(false);
 
-  // Subscribe to clientGameEngine updates when in client mode
+  // Subscribe to clientGameEngine updates
   useEffect(() => {
     const unsubRoom = clientGameEngine.subscribe((updatedRoom) => {
-      if (useClientEngineRef.current) {
-        setRoom({ ...updatedRoom });
+      setRoom({ ...updatedRoom });
+      if (updatedRoom.chatMessages && updatedRoom.chatMessages.length > 0) {
+        setChatMessages(updatedRoom.chatMessages);
       }
     });
 
     const unsubEvents = clientGameEngine.onEvent((event, payload) => {
-      if (!useClientEngineRef.current) return;
       if (event === 'round:start') sound.playClick();
       else if (event === 'round:voting_start') sound.playClick();
       else if (event === 'round:vote_cast') sound.playKeypress();
@@ -52,6 +52,13 @@ export function useGameSocket(userProfile: UserProfile) {
         }
       } else if (event === 'game:end') {
         sound.playVictory();
+      } else if (event === 'chat:message') {
+        setChatMessages((prev) => {
+          if (prev.some(m => m.timestamp === payload.timestamp && m.senderName === payload.senderName)) {
+            return prev;
+          }
+          return [...prev.slice(-39), payload];
+        });
       }
     });
 
@@ -149,33 +156,9 @@ export function useGameSocket(userProfile: UserProfile) {
 
   // API Call: Create Room
   const createRoom = async (settings?: Partial<RoomSettings>): Promise<string | null> => {
-    // Only attempt server if not explicitly on netlify or static domain without backend
-    const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-
-    if (!isNetlify) {
-      try {
-        const res = await fetch('/api/rooms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ player: userProfile, settings })
-        });
-        const contentType = res.headers.get('content-type') || '';
-        if (res.ok && contentType.includes('application/json')) {
-          const data = await res.json();
-          if (data.roomId) {
-            useClientEngineRef.current = false;
-            setRoom(data.room);
-            connectWebSocket(data.roomId);
-            return data.roomId;
-          }
-        }
-      } catch (err) {
-        console.warn('Backend /api/rooms failed, switching to client engine:', err);
-      }
-    }
-
-    // Client-side fallback engine (100% works on Netlify and offline)
     useClientEngineRef.current = true;
+
+    // 1. Create client-side room with instant Firestore synchronization
     const clientRoom = await clientGameEngine.createRoom(
       {
         id: userProfile.id,
@@ -191,38 +174,28 @@ export function useGameSocket(userProfile: UserProfile) {
     );
     setRoom({ ...clientRoom });
     setConnected(true);
+
+    // 2. Also register room with backend server if available
+    try {
+      fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player: userProfile, settings, forcedRoomId: clientRoom.roomId })
+      }).catch(() => {});
+    } catch {
+      // Ignored
+    }
+
+    connectWebSocket(clientRoom.roomId);
     return clientRoom.roomId;
   };
 
   // API Call: Join Room
   const joinRoom = async (roomId: string): Promise<boolean> => {
     const cleanCode = roomId.toUpperCase().trim();
-    const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+    if (!cleanCode) return false;
 
-    if (!isNetlify) {
-      try {
-        const res = await fetch(`/api/rooms/${cleanCode}/join`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ player: userProfile })
-        });
-        const contentType = res.headers.get('content-type') || '';
-        if (res.ok && contentType.includes('application/json')) {
-          const data = await res.json();
-          if (data.success && data.room) {
-            useClientEngineRef.current = false;
-            setRoom(data.room);
-            connectWebSocket(cleanCode);
-            return true;
-          }
-        }
-      } catch (err) {
-        console.warn('Backend join failed, switching to client engine:', err);
-      }
-    }
-
-    // Client-side / Firestore fallback
-    useClientEngineRef.current = true;
+    // 1. First attempt join via clientGameEngine & Firestore (global sync across all devices & instances)
     const clientRoom = await clientGameEngine.joinRoom(cleanCode, {
       id: userProfile.id,
       name: userProfile.name,
@@ -233,11 +206,51 @@ export function useGameSocket(userProfile: UserProfile) {
       hasAnswered: false,
       isReady: true
     });
+
     if (clientRoom) {
+      useClientEngineRef.current = true;
       setRoom({ ...clientRoom });
       setConnected(true);
+
+      // Also notify backend server
+      try {
+        fetch(`/api/rooms/${cleanCode}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ player: userProfile })
+        }).catch(() => {});
+      } catch {
+        // Ignored
+      }
+
+      connectWebSocket(cleanCode);
       return true;
     }
+
+    // 2. Backend server fallback if room was created in server memory
+    try {
+      const res = await fetch(`/api/rooms/${cleanCode}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player: userProfile })
+      });
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data.success && data.room) {
+          await clientGameEngine.syncToFirestore(data.room);
+          clientGameEngine.listenToFirestoreRoom(cleanCode);
+          useClientEngineRef.current = true;
+          setRoom(data.room);
+          setConnected(true);
+          connectWebSocket(cleanCode);
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend join fallback failed:', err);
+    }
+
     return false;
   };
 
@@ -440,14 +453,17 @@ export function useGameSocket(userProfile: UserProfile) {
       text: text.trim(),
       timestamp: Date.now()
     };
+    clientGameEngine.sendChatMessage(msg);
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        event: 'chat:message',
-        roomId: room.roomId,
-        ...msg
-      }));
-    } else {
-      setChatMessages((prev) => [...prev.slice(-40), msg]);
+      try {
+        wsRef.current.send(JSON.stringify({
+          event: 'chat:message',
+          roomId: room.roomId,
+          ...msg
+        }));
+      } catch {
+        // Ignored
+      }
     }
   };
 
