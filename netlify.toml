@@ -1,11 +1,13 @@
 [build]
-  command = "npm run build"
   publish = "dist"
+  command = "npm run build"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://ais-pre-kbneoti6o2ykjqkuqg4ifj-567081770337.us-east1.run.app/api/:splat"
+  status = 200
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-[build.environment]
-  NODE_VERSION = "20"

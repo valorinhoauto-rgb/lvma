@@ -41,8 +41,8 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onLogoClick}
           className="flex items-center gap-2.5 text-left group transition-transform active:scale-95"
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-pink-400 flex items-center justify-center font-black text-slate-950 text-base tracking-tighter shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/30 transition-shadow">
-            M
+          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/30 transition-all border border-slate-700/60 shrink-0 bg-slate-950 flex items-center justify-center">
+            <img src="/favicon.svg" alt="MALM Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="flex items-center gap-1.5 leading-none">

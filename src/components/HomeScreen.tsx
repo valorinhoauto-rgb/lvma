@@ -45,15 +45,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6">
       {/* Hero Presentation */}
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
           <Sparkles className="w-3.5 h-3.5" />
           <span>MALM • STOP, TERMO & Desafio Juice</span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white font-['Outfit']">
-          <span className="bg-gradient-to-r from-white via-emerald-200 to-teal-300 bg-clip-text text-transparent">MALM</span>
-        </h1>
+        <div className="flex items-center justify-center gap-3.5">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden shadow-xl shadow-emerald-500/20 border border-slate-700/80 bg-slate-950 p-0.5 shrink-0">
+            <img src="/favicon.svg" alt="MALM Logo" className="w-full h-full object-cover rounded-xl" />
+          </div>
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white font-['Outfit']">
+            <span className="bg-gradient-to-r from-white via-emerald-200 to-teal-300 bg-clip-text text-transparent">MALM</span>
+          </h1>
+        </div>
 
         <p className="text-slate-400 text-xs sm:text-sm max-w-xl mx-auto font-normal">
           Jogos multiplayer de palavras e adivinhação: STOP + TERMO com votação da galera, Modo Juice fotográfico e TERMO coletivo!

@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, User, Trophy, Zap, Sparkles, BookOpen, Target, Crown, Check, Save, LogIn, LogOut, History, Award } from 'lucide-react';
+import { X, User, Trophy, Zap, Sparkles, BookOpen, Target, Crown, Check, Save, LogIn, LogOut, History, Award, AlertCircle } from 'lucide-react';
 import { GameHistoryEntry, UserProfile } from '../types.ts';
 import { ACHIEVEMENTS_LIST, calculateLevel, saveUserProfile } from '../utils/profile.ts';
 import { sound } from '../utils/audio.ts';
@@ -30,6 +30,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [saved, setSaved] = useState(false);
   const [history, setHistory] = useState<GameHistoryEntry[]>([]);
   const [loadingAuth, setLoadingAuth] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     setName(userProfile.name);
@@ -67,6 +68,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleGoogleLogin = async () => {
     try {
+      setAuthError(null);
       setLoadingAuth(true);
       sound.playClick();
       const fbUser = await loginWithGoogle();
@@ -82,8 +84,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         onUpdateProfile(updated);
         sound.playSuccess();
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Google login failed:', err);
+      const errorObj = err as { code?: string; message?: string };
+      if (errorObj?.code === 'auth/unauthorized-domain') {
+        setAuthError('O domínio atual (malm.netlify.app) precisa ser adicionado à lista de "Domínios Autorizados" nas configurações do Firebase Authentication.');
+      } else if (errorObj?.code === 'auth/popup-closed-by-user') {
+        setAuthError('Janela de login fechada antes da confirmação.');
+      } else {
+        setAuthError(errorObj?.message || 'Falha ao conectar com a conta Google.');
+      }
     } finally {
       setLoadingAuth(false);
     }
@@ -210,6 +220,32 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   </button>
                 )}
               </div>
+
+              {/* Auth Warning/Error for Unauthorized Domain or Other Issues */}
+              {authError && (
+                <div className="p-3 bg-rose-950/40 border border-rose-500/40 rounded-2xl text-xs text-rose-200 space-y-2">
+                  <div className="font-bold flex items-center gap-1.5 text-rose-300">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span>Aviso de Autenticação</span>
+                  </div>
+                  <p className="leading-relaxed text-slate-300">{authError}</p>
+                  {authError.includes('Domínios Autorizados') && (
+                    <div className="pt-1 border-t border-rose-500/20 text-[11px] text-slate-400">
+                      <span>Para liberar no Netlify, adicione </span>
+                      <code className="bg-slate-900 px-1 py-0.5 rounded text-amber-300 font-mono">malm.netlify.app</code>
+                      <span> em: </span>
+                      <a
+                        href="https://console.firebase.google.com/project/gen-lang-client-0260535518/authentication/settings"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-emerald-400 hover:text-emerald-300 font-bold underline ml-1"
+                      >
+                        Firebase Console &rarr; Auth &rarr; Settings
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Level & XP Card */}
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">

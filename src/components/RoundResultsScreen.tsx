@@ -49,10 +49,16 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
         <div className="bg-slate-900 border border-pink-500/30 rounded-2xl p-4 shadow-xl flex items-center gap-4">
           <div className="w-20 h-20 rounded-xl overflow-hidden bg-slate-950 shrink-0 border border-slate-700">
             <img
-              src={`/api/image-proxy?url=${encodeURIComponent(round.photoChallenge.imageUrl)}`}
+              src={round.photoChallenge.imageUrl}
               alt={round.photoChallenge.targetName}
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.includes('/api/image-proxy')) {
+                  target.src = `/api/image-proxy?url=${encodeURIComponent(round.photoChallenge!.imageUrl)}`;
+                }
+              }}
             />
           </div>
           <div className="space-y-1 flex-1">
