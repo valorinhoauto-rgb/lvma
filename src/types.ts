@@ -98,9 +98,11 @@ export interface TermoGuessResult {
 export interface JuiceGuessResult {
   guess: string;
   isCorrect: boolean;
+  isPartial?: boolean;              // Resposta meio certa (palavra parcial de termo composto)
   isClose: boolean;
   message: string;
   timeMs?: number;
+  pointsAwarded?: number;
 }
 
 export interface AnswerVoteSummary {
@@ -115,6 +117,7 @@ export interface PlayerAnswer {
   rawAnswer: string;
   normalizedAnswer: string;
   isValid: boolean;
+  isPartial?: boolean;              // Resposta meio certa (50% dos pontos no Juice)
   inDictionary: boolean;            // Indicador de se consta no dicionário
   isCommunityApproved: boolean;     // Aprovado pela votação dos jogadores (zoeiras/contexto)
   votes: AnswerVoteSummary;

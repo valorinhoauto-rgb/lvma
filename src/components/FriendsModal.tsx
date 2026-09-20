@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Users, UserPlus, Search, Copy, Check, Trash2, Send, X, Sparkles, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { Users, UserPlus, Search, Copy, Check, Trash2, Send, X, Sparkles, ShieldCheck, AlertCircle, Loader2, LogIn, Lock } from 'lucide-react';
 import { Friend, UserProfile, Player } from '../types.ts';
 import { PlayerAvatar } from './PlayerAvatar.tsx';
 import { sound } from '../utils/audio.ts';
-import { findUserByNickname } from '../lib/firebase.ts';
+import { findUserByNickname, auth, loginWithGoogle } from '../lib/firebase.ts';
 
 interface FriendsModalProps {
   isOpen: boolean;
@@ -24,6 +24,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
   onRemoveFriend,
   currentRoomId
 }) => {
+  const isGoogleUser = Boolean(currentUser.isGoogleAuth || auth.currentUser);
   const [activeTab, setActiveTab] = useState<'list' | 'add'>('list');
   const [searchNick, setSearchNick] = useState('');
   const [searching, setSearching] = useState(false);
@@ -31,8 +32,27 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
   const [searchError, setSearchError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [inviteFeedback, setInviteFeedback] = useState<string | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const handleGoogleLogin = async () => {
+    try {
+      setLoadingAuth(true);
+      setAuthError(null);
+      sound.playClick();
+      await loginWithGoogle();
+      sound.playSuccess();
+    } catch (err: unknown) {
+      console.error('Google login error from FriendsModal:', err);
+      const errorObj = err as { message?: string };
+      setAuthError(errorObj?.message || 'Falha ao conectar com a conta Google.');
+      sound.playError();
+    } finally {
+      setLoadingAuth(false);
+    }
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,37 +161,39 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
           </button>
         </div>
 
-        {/* Tab Selector */}
-        <div className="flex border-b border-slate-800 px-6 bg-slate-950/40">
-          <button
-            onClick={() => {
-              sound.playClick();
-              setActiveTab('list');
-            }}
-            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === 'list'
-                ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Meus Amigos ({friends.length})</span>
-          </button>
-          <button
-            onClick={() => {
-              sound.playClick();
-              setActiveTab('add');
-            }}
-            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === 'add'
-                ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Adicionar por Nickname</span>
-          </button>
-        </div>
+        {/* Tab Selector - only shown when logged in with Google */}
+        {isGoogleUser && (
+          <div className="flex border-b border-slate-800 px-6 bg-slate-950/40">
+            <button
+              onClick={() => {
+                sound.playClick();
+                setActiveTab('list');
+              }}
+              className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'list'
+                  ? 'border-emerald-400 text-emerald-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Meus Amigos ({friends.length})</span>
+            </button>
+            <button
+              onClick={() => {
+                sound.playClick();
+                setActiveTab('add');
+              }}
+              className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'add'
+                  ? 'border-emerald-400 text-emerald-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Adicionar por Nickname</span>
+            </button>
+          </div>
+        )}
 
         {/* Toast / Feedback notification */}
         {inviteFeedback && (
@@ -183,7 +205,58 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 
         {/* Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
-          {activeTab === 'list' ? (
+          {!isGoogleUser ? (
+            <div className="py-8 px-4 flex flex-col items-center justify-center text-center space-y-4 my-auto">
+              <div className="w-16 h-16 rounded-3xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
+                <Users className="w-8 h-8" />
+              </div>
+
+              <div className="space-y-1.5 max-w-sm">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-bold">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Exclusivo para Contas Google</span>
+                </div>
+                <h3 className="text-lg font-black text-white font-['Outfit']">
+                  Lista de Amigos Requer Login
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Para adicionar amigos por <strong>Nickname Único</strong>, ver quem está online e convidar amigos diretamente para suas salas, conecte-se com sua conta Google.
+                </p>
+              </div>
+
+              <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 text-left text-xs text-slate-300 space-y-2 max-w-xs w-full">
+                <div className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                  <span>Salvar amigos permanentemente na nuvem</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                  <span>Pesquisar jogadores por <strong>@Nickname</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                  <span>Enviar convite de sala com 1 clique</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleGoogleLogin}
+                disabled={loadingAuth}
+                className="px-6 py-3 bg-white hover:bg-slate-100 text-slate-950 font-black rounded-2xl text-xs flex items-center gap-2 shadow-xl hover:scale-105 transition-all cursor-pointer"
+              >
+                {loadingAuth ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                ) : (
+                  <LogIn className="w-4 h-4 text-blue-600" />
+                )}
+                <span>Entrar com Conta Google</span>
+              </button>
+
+              {authError && (
+                <p className="text-xs text-rose-400 max-w-xs">{authError}</p>
+              )}
+            </div>
+          ) : activeTab === 'list' ? (
             <>
               {friends.length === 0 ? (
                 <div className="text-center py-10 px-4 bg-slate-950/50 rounded-2xl border border-slate-800">

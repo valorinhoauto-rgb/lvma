@@ -25,7 +25,8 @@ import { HowToPlayModal } from './components/HowToPlayModal.tsx';
 import { FriendsModal } from './components/FriendsModal.tsx';
 import { NicknameSetupModal } from './components/NicknameSetupModal.tsx';
 import { useGameSocket } from './hooks/useGameSocket.ts';
-import { getOrCreateUserProfile, saveUserProfile } from './utils/profile.ts';
+import { getOrCreateUserProfile, saveUserProfile, createGuestProfile } from './utils/profile.ts';
+import { getSuggestedNickname } from './utils/avatarData.ts';
 import { sound } from './utils/audio.ts';
 import { auth, fetchUserProfile, recordGameHistory, syncUserProfileToDb, fetchFriendsFromDb, saveFriendToDb, removeFriendFromDb } from './lib/firebase.ts';
 import { GameMode, Friend, Player } from './types.ts';
@@ -36,7 +37,7 @@ export default function App() {
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [showDictionary, setShowDictionary] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
-  const [showNicknameSetup, setShowNicknameSetup] = useState(() => !userProfile.nicknameLocked && !userProfile.hasConfiguredProfile);
+  const [showNicknameSetup, setShowNicknameSetup] = useState(false);
   const [termoModeActive, setTermoModeActive] = useState(false);
   const [joinAlert, setJoinAlert] = useState<string | null>(null);
   const [friends, setFriends] = useState<Friend[]>(() => {
@@ -77,20 +78,34 @@ export default function App() {
         // Logged in with Google: Fetch cloud profile or initialize
         const remoteProfile = await fetchUserProfile(fbUser.uid);
         if (remoteProfile) {
-          setUserProfile(remoteProfile);
-          saveUserProfile(remoteProfile);
-          if (remoteProfile.nicknameLocked) {
+          const merged = {
+            ...remoteProfile,
+            isGoogleAuth: true
+          };
+          setUserProfile(merged);
+          saveUserProfile(merged);
+          if (!merged.nicknameLocked) {
+            setShowNicknameSetup(true);
+          } else {
             setShowNicknameSetup(false);
           }
         } else {
+          const suggestedNick = getSuggestedNickname(fbUser.displayName || fbUser.email || '');
           const syncedProfile = {
             ...userProfile,
             id: fbUser.uid,
-            name: fbUser.displayName || userProfile.name,
+            name: suggestedNick,
+            nickname: suggestedNick,
+            email: fbUser.email || undefined,
+            photoURL: fbUser.photoURL || undefined,
+            isGoogleAuth: true,
+            nicknameLocked: false,
+            hasConfiguredProfile: false
           };
           setUserProfile(syncedProfile);
           saveUserProfile(syncedProfile);
           await syncUserProfileToDb(syncedProfile);
+          setShowNicknameSetup(true);
         }
 
         // Fetch cloud friends
@@ -98,6 +113,16 @@ export default function App() {
         if (cloudFriends && cloudFriends.length > 0) {
           setFriends(cloudFriends);
           localStorage.setItem('malm_friends', JSON.stringify(cloudFriends));
+        }
+      } else {
+        // Guest or logged out
+        setShowNicknameSetup(false);
+        if (userProfile.isGoogleAuth) {
+          const guest = createGuestProfile();
+          setUserProfile(guest);
+          saveUserProfile(guest);
+          setFriends([]);
+          localStorage.removeItem('malm_friends');
         }
       }
     });
@@ -146,6 +171,11 @@ export default function App() {
   };
 
   const handleAddFriendFromPlayer = (player: Player) => {
+    if (!userProfile.isGoogleAuth && !auth.currentUser) {
+      sound.playClick();
+      setShowFriends(true);
+      return;
+    }
     const friendData: Friend = {
       id: player.id,
       nickname: player.nickname || player.name,

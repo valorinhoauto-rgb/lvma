@@ -389,32 +389,62 @@ class ClientGameEngine {
     if (round.photoChallenge) {
       const validation = validateJuiceGuessDetailed(rawAnswer, round.photoChallenge);
       const isCorrect = validation.isCorrect;
+      const isPartial = Boolean(validation.isPartial);
       const existingRecord = this.activeRoom.roundAnswers[playerId];
       const previousGuesses: JuiceGuessResult[] = existingRecord?.juiceGuesses || [];
+
+      // Cálculo de pontuação: resposta completa ganha pontos normais baseados na rapidez (50 a 150 pts).
+      // Resposta "meio certa" (palavra parcial em termo composto, ex: "Cristo" em vez de "Cristo Redentor")
+      // ganha 50% dos pontos, evitando qualquer vantagem injusta de velocidade sobre os outros.
+      const baseSpeedPoints = Math.max(50, Math.round(150 - (responseTimeMs / 1000) * 3));
+      const pointsMultiplier = validation.pointsMultiplier || (isPartial ? 0.5 : 1.0);
+      const currentEarnedPoints = Math.max(25, Math.round(baseSpeedPoints * pointsMultiplier));
+
+      const wasAlreadyFull = Boolean(existingRecord?.isValid && !existingRecord?.isPartial);
+      let finalPoints = existingRecord?.points || 0;
+      let finalIsPartial = existingRecord?.isPartial ?? isPartial;
+
+      if (isCorrect) {
+        if (!wasAlreadyFull) {
+          if (!isPartial) {
+            // Acertou a resposta completa (ou fez upgrade de meio certa para completa!)
+            finalPoints = Math.max(finalPoints, currentEarnedPoints);
+            finalIsPartial = false;
+          } else {
+            // Resposta meio certa
+            finalPoints = Math.max(finalPoints, currentEarnedPoints);
+            finalIsPartial = true;
+          }
+        }
+      }
 
       const guessObj: JuiceGuessResult = {
         guess: rawAnswer,
         isCorrect,
+        isPartial,
         isClose: validation.isClose,
         message: validation.message,
-        timeMs: responseTimeMs
+        timeMs: responseTimeMs,
+        pointsAwarded: isCorrect ? currentEarnedPoints : 0
       };
 
       const updatedGuesses = [...previousGuesses, guessObj];
-      const points = isCorrect ? Math.max(50, Math.round(150 - (responseTimeMs / 1000) * 3)) : (existingRecord?.points || 0);
 
       const answerRecord: PlayerAnswer = {
         playerId,
         playerName: player.name,
-        rawAnswer,
-        normalizedAnswer: validation.normalizedGuess,
+        rawAnswer: isCorrect && !isPartial ? rawAnswer : (existingRecord?.rawAnswer || rawAnswer),
+        normalizedAnswer: isCorrect && !isPartial ? validation.normalizedGuess : (existingRecord?.normalizedAnswer || validation.normalizedGuess),
         isValid: isCorrect || (existingRecord?.isValid ?? false),
+        isPartial: finalIsPartial,
         inDictionary: true,
         isCommunityApproved: isCorrect || (existingRecord?.isCommunityApproved ?? false),
         votes: { yes: 0, no: 0, voterIds: {} },
         responseTimeMs,
-        points,
-        validationReason: isCorrect ? 'Acertou o desafio!' : validation.message,
+        points: finalPoints,
+        validationReason: isCorrect
+          ? (finalIsPartial ? '⚡ Resposta Meio Certa (50% dos pontos)' : '🎉 Acertou o desafio completo!')
+          : validation.message,
         guessedTarget: isCorrect || (existingRecord?.guessedTarget ?? false),
         juiceGuesses: updatedGuesses
       };
@@ -422,7 +452,8 @@ class ClientGameEngine {
       this.activeRoom.roundAnswers[playerId] = answerRecord;
       if (isCorrect) {
         player.hasAnswered = true;
-        player.currentAnswer = rawAnswer;
+        player.currentAnswer = answerRecord.rawAnswer;
+        player.roundScore = finalPoints;
       }
 
       this.notify('juice:guess_result', {
@@ -431,6 +462,8 @@ class ClientGameEngine {
         guessResult: guessObj,
         hasAnswered: player.hasAnswered,
         isCorrect,
+        isPartial: finalIsPartial,
+        points: finalPoints,
         isClose: validation.isClose
       });
 
@@ -447,6 +480,8 @@ class ClientGameEngine {
         room: this.activeRoom,
         validation: {
           isValid: isCorrect,
+          isPartial: finalIsPartial,
+          points: finalPoints,
           isClose: validation.isClose,
           message: validation.message,
           guessObj

@@ -11,33 +11,44 @@ service cloud.firestore {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // Unique Nicknames Registry: one unique document per normalized nickname
-    match /nicknames/{nicknameLower} {
-      allow read: if isValidId(nicknameLower);
-      allow create: if isValidId(nicknameLower);
-      allow update: if isValidId(nicknameLower);
+    // Connection test document
+    match /test/{testId} {
+      allow read: if true;
     }
 
-    // User profiles & friends
+    // Unique Nicknames Registry: one unique document per normalized nickname
+    match /nicknames/{nicknameLower} {
+      allow get: if isValidId(nicknameLower);
+      allow list: if true;
+      allow create, update: if isValidId(nicknameLower);
+      allow delete: if false;
+    }
+
+    // User profiles & subcollections
     match /users/{userId} {
-      allow get, list: if isValidId(userId);
+      allow get: if isValidId(userId);
+      allow list: if true;
       allow create, update: if isValidId(userId);
       allow delete: if false;
 
       // Subcollection for friends
       match /friends/{friendId} {
-        allow read, write: if isValidId(userId) && isValidId(friendId);
+        allow list: if isValidId(userId);
+        allow get, create, update, delete: if isValidId(userId) && isValidId(friendId);
       }
 
       // Subcollection for game history
       match /gameHistory/{historyId} {
-        allow read, write: if isValidId(userId);
+        allow list: if isValidId(userId);
+        allow get, create, update, delete: if isValidId(userId) && isValidId(historyId);
       }
     }
 
     // Rooms (for multiplayer cloud persistence and real-time sync across all players)
     match /rooms/{roomId} {
-      allow read, write: if isValidId(roomId);
+      allow get, create, update, delete: if isValidId(roomId);
+      allow list: if true;
     }
   }
 }
+

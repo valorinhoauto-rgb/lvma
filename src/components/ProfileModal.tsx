@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, User, Trophy, Zap, Sparkles, BookOpen, Target, Crown, Check, Save, LogIn, LogOut, History, Award, AlertCircle, Dice5, ShieldCheck, Lock, Loader2 } from 'lucide-react';
 import { GameHistoryEntry, UserProfile } from '../types.ts';
-import { ACHIEVEMENTS_LIST, calculateLevel, saveUserProfile } from '../utils/profile.ts';
+import { ACHIEVEMENTS_LIST, calculateLevel, saveUserProfile, createGuestProfile } from '../utils/profile.ts';
 import { sound } from '../utils/audio.ts';
 import { auth, loginWithGoogle, logout, fetchUserGameHistory, syncUserProfileToDb, fetchUserProfile, checkNicknameAvailable, reserveNickname } from '../lib/firebase.ts';
 import { AVATAR_CATEGORIES, AVATAR_COLOR_THEMES, generateRandomNickname, getSuggestedNickname } from '../utils/avatarData.ts';
@@ -163,6 +163,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     try {
       sound.playClick();
       await logout();
+      const guest = createGuestProfile();
+      saveUserProfile(guest);
+      onUpdateProfile(guest);
     } catch (err) {
       console.error('Logout error:', err);
     }
@@ -184,6 +187,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   };
 
   const currentUser = auth.currentUser;
+  const isGoogleUser = Boolean(userProfile.isGoogleAuth || currentUser);
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -320,11 +324,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-sm text-white">{name.trim() || 'Jogador'}</span>
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.5 rounded font-mono">
-                        Nv. {levelInfo.level}
-                      </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-sm text-white">@{userProfile.nickname || userProfile.name}</span>
+                      {isGoogleUser ? (
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.5 rounded font-mono">
+                          Nv. {levelInfo.level}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded font-mono">
+                          Visitante (Aleatório)
+                        </span>
+                      )}
                     </div>
                     <span className="text-xs text-slate-400 font-mono font-medium">
                       {levelInfo.currentLevelXp} / {levelInfo.nextLevelXp} XP
@@ -342,8 +352,65 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 </div>
               </div>
 
-              {/* Edit Identity Form */}
-              <form onSubmit={handleSave} className="space-y-4">
+              {/* If Guest: Show locked notification. If Google Account: Show Edit Identity Form */}
+              {!isGoogleUser ? (
+                <div className="bg-gradient-to-br from-slate-950 to-slate-900 border border-amber-500/30 rounded-2xl p-5 text-center space-y-4 shadow-xl">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+                    <Lock className="w-6 h-6" />
+                  </div>
+
+                  <div className="space-y-1.5 max-w-sm mx-auto">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-bold">
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Exclusivo para Contas Google</span>
+                    </div>
+                    <h3 className="text-base font-black text-white font-['Outfit']">
+                      Nickname e Personalização Bloqueados
+                    </h3>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      Visitantes jogam com um nickname aleatório (<span className="font-mono text-amber-300 font-bold">@{userProfile.nickname || userProfile.name}</span>) e avatar padrão, sem poder alterar ou personalizar.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 text-left text-xs text-slate-300 space-y-2 max-w-xs mx-auto">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Escolha seu <strong>Nickname Único</strong> permanente</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Personalize Avatar e Cores temáticas</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Desbloqueie a <strong>Lista de Amigos</strong> e convites</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Sincronize XP, nível e histórico na nuvem</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleGoogleLogin}
+                    disabled={loadingAuth}
+                    className="px-6 py-3 bg-white hover:bg-slate-100 text-slate-950 text-xs font-black rounded-xl inline-flex items-center gap-2 shadow-xl hover:scale-105 transition-all cursor-pointer"
+                  >
+                    {loadingAuth ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    ) : (
+                      <LogIn className="w-4 h-4 text-blue-600" />
+                    )}
+                    <span>Entrar com Conta Google</span>
+                  </button>
+
+                  {authError && (
+                    <p className="text-xs text-rose-400 max-w-xs mx-auto">{authError}</p>
+                  )}
+                </div>
+              ) : (
+                <form onSubmit={handleSave} className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
@@ -563,6 +630,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   )}
                 </button>
               </form>
+            )}
             </>
           )}
 

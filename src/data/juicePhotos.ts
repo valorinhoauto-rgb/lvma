@@ -787,6 +787,1000 @@ export const JUICE_PHOTO_CHALLENGES: JuicePhotoChallenge[] = [
     photoCredit: 'Acervo Registrado • Fotografia Autêntica',
     themeId: 'mundo_cultura',
     isBrazilian: false
+  },
+  {
+    id: "place_sambodromo",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e6/Sambodromo_Marqu%C3%AAs_de_Sapuca%C3%AD_1985_%2853-16A%29.jpg/960px-Sambodromo_Marqu%C3%AAs_de_Sapuca%C3%AD_1985_%2853-16A%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Patrimônio Cultural do Brasil",
+    targetName: "SAMBODROMO",
+    normalizedTarget: "SAMBODROMO",
+    aliases: ["SAMBODROMO","SAMBÓDROMO","MARQUES DE SAPUCAI","SAPUCAI","PASSARELA DO SAMBA","CARNAVAL"],
+    hint: "A passarela do samba na Marquês de Sapucaí, palco dos maiores desfiles de Carnaval do mundo.",
+    letterCount: 10,
+    initialLetter: "S",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_monte_roraima",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c0/Monte_Roraima_e_Kukenan_Tepui_no_retorno_a_casa.jpg/960px-Monte_Roraima_e_Kukenan_Tepui_no_retorno_a_casa.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Natureza / Maravilha do Brasil",
+    targetName: "MONTE RORAIMA",
+    normalizedTarget: "MONTE RORAIMA",
+    aliases: ["MONTE RORAIMA","RORAIMA","TEPUI","MONTE RORAIMA BRASIL"],
+    hint: "Gigantesca montanha de topo plano (tepui) na tríplice fronteira entre Brasil, Venezuela e Guiana.",
+    letterCount: 12,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_catedral_brasilia",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Catedral_Metropolitana_de_Bras%C3%ADlia_-_Bras%C3%ADlia_-_20150603150521.jpg/960px-Catedral_Metropolitana_de_Bras%C3%ADlia_-_Bras%C3%ADlia_-_20150603150521.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Monumento do Brasil",
+    targetName: "CATEDRAL DE BRASILIA",
+    normalizedTarget: "CATEDRAL DE BRASILIA",
+    aliases: ["CATEDRAL DE BRASILIA","CATEDRAL DE BRASÍLIA","CATEDRAL METROPOLITANA","CATEDRAL","BRASILIA","NIEMEYER"],
+    hint: "Famosa catedral com estrutura hiperboloide de 16 colunas de concreto projetada por Oscar Niemeyer.",
+    letterCount: 18,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_elevador_lacerda",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/Elevador_Lacerda_Salvador_Bahia_Outubro_Rosa_2021-1851.jpg/960px-Elevador_Lacerda_Salvador_Bahia_Outubro_Rosa_2021-1851.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Ponto Turístico do Brasil",
+    targetName: "ELEVADOR LACERDA",
+    normalizedTarget: "ELEVADOR LACERDA",
+    aliases: ["ELEVADOR LACERDA","ELEVADOR","LACERDA","SALVADOR","CIDADE ALTA","BAHIA","CIDADE BAIXA"],
+    hint: "Primeiro elevador urbano do mundo que liga a Cidade Baixa à Cidade Alta em Salvador.",
+    letterCount: 15,
+    initialLetter: "E",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_ponte_hercilio_luz",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/97/Ponte_Hercilio_Luz_-_Florianopolis_-_Santa_Catarina.jpg/960px-Ponte_Hercilio_Luz_-_Florianopolis_-_Santa_Catarina.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Monumento / Cartão-Postal do Brasil",
+    targetName: "PONTE HERCILIO LUZ",
+    normalizedTarget: "PONTE HERCILIO LUZ",
+    aliases: ["PONTE HERCILIO LUZ","HERCILIO LUZ","HERCÍLIO LUZ","PONTE PENSIL","FLORIANOPOLIS","FLORIPA","SANTA CATARINA"],
+    hint: "Majestosa ponte pênsil cartão-postal que liga a ilha ao continente em Florianópolis.",
+    letterCount: 16,
+    initialLetter: "P",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_museu_amanha",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/Museu_do_Amanh%C3%A3_ao_anoitecer_do_Rio.jpg/960px-Museu_do_Amanh%C3%A3_ao_anoitecer_do_Rio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Museu / Ponto Turístico do Brasil",
+    targetName: "MUSEU DO AMANHA",
+    normalizedTarget: "MUSEU DO AMANHA",
+    aliases: ["MUSEU DO AMANHA","MUSEU DO AMANHÃ","PRACA MAUA","PORTO MARAVILHA","RIO DE JANEIRO"],
+    hint: "Museu futurista projetado por Santiago Calatrava na Praça Mauá no Rio de Janeiro.",
+    letterCount: 13,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_pantanal",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/Flavio_Andre_Pantanal_Vista_aerea_Pocone_MT.jpg/960px-Flavio_Andre_Pantanal_Vista_aerea_Pocone_MT.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Natureza / Bioma do Brasil",
+    targetName: "PANTANAL",
+    normalizedTarget: "PANTANAL",
+    aliases: ["PANTANAL","PANTANAL MATO GROSSENSE","PANTANAL SUL","MATO GROSSO","MS"],
+    hint: "A maior planície de inundação contínua do planeta, santuário de onças, tuiuiús e jacarés.",
+    letterCount: 8,
+    initialLetter: "P",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_jericoacoara",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Pedra_Furada_de_Jericoacoara_2026.jpg/960px-Pedra_Furada_de_Jericoacoara_2026.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Praia / Maravilha do Brasil",
+    targetName: "JERICOACOARA",
+    normalizedTarget: "JERICOACOARA",
+    aliases: ["JERICOACOARA","JERI","PEDRA FURADA","DUNAS DE JERI","CEARA"],
+    hint: "Antiga vila de pescadores no Ceará famosa pela Pedra Furada e lagoas com redes na água.",
+    letterCount: 12,
+    initialLetter: "J",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_bonito",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Gruta_do_Lago_Azul_%28Bonito%29.jpg/960px-Gruta_do_Lago_Azul_%28Bonito%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Natureza / Turismo do Brasil",
+    targetName: "BONITO",
+    normalizedTarget: "BONITO",
+    aliases: ["BONITO","BONITO MS","GRUTA DO LAGO AZUL","RIO DA PRATA","MATO GROSSO DO SUL"],
+    hint: "Capital do ecoturismo no Mato Grosso do Sul, célebre pela Gruta do Lago Azul e rios cristalinos.",
+    letterCount: 6,
+    initialLetter: "B",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_ouro_preto",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Ouro_Preto_November_2009-11a.jpg/960px-Ouro_Preto_November_2009-11a.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Patrimônio Histórico do Brasil",
+    targetName: "OURO PRETO",
+    normalizedTarget: "OURO PRETO",
+    aliases: ["OURO PRETO","VILA RICA","MINAS GERAIS","IGREJA DE SAO FRANCISCO","ALEIJADINHO"],
+    hint: "Histórica cidade colonial mineira, patrimônio da humanidade com ladeiras e igrejas barrocas de Aleijadinho.",
+    letterCount: 9,
+    initialLetter: "O",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_chapada_veadeiros",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f8/Vale_da_Lua_Chapada_dos_Veadeiros_GO.jpg/960px-Vale_da_Lua_Chapada_dos_Veadeiros_GO.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Natureza / Parque do Brasil",
+    targetName: "CHAPADA DOS VEADEIROS",
+    normalizedTarget: "CHAPADA DOS VEADEIROS",
+    aliases: ["CHAPADA DOS VEADEIROS","VEADEIROS","VALE DA LUA","ALTO PARAISO","GOIAS"],
+    hint: "Parque Nacional em Goiás famoso por cânions de quartzo, cachoeiras e as formações lunares do Vale da Lua.",
+    letterCount: 19,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_jalapao",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Parque_Estadual_do_Jalap%C3%A3o_Jo%C3%A3o_Paulo_Marques_Dandretta_%2816%29_edited.jpg/960px-Parque_Estadual_do_Jalap%C3%A3o_Jo%C3%A3o_Paulo_Marques_Dandretta_%2816%29_edited.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Natureza / Maravilha do Brasil",
+    targetName: "JALAPAO",
+    normalizedTarget: "JALAPAO",
+    aliases: ["JALAPAO","JALAPÃO","FERVEDOURO","DUNAS DO JALAPAO","TOCANTINS","FERVEDOUROS"],
+    hint: "Paraíso no cerrado do Tocantins com dunas douradas e fervedouros de águas azul-turquesa onde não se afunda.",
+    letterCount: 7,
+    initialLetter: "J",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "place_ilha_grande",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/06/Praia_de_Lopes_Mendes_-_Ilha_Grande_-_Angra_dos_Reis.jpg/960px-Praia_de_Lopes_Mendes_-_Ilha_Grande_-_Angra_dos_Reis.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Natureza / Praia do Brasil",
+    targetName: "ILHA GRANDE",
+    normalizedTarget: "ILHA GRANDE",
+    aliases: ["ILHA GRANDE","ANGRA DOS REIS","LOPES MENDES","LAGOA AZUL"],
+    hint: "Famosa ilha paradisíaca em Angra dos Reis cercada por Mata Atlântica e praias paradisíacas como Lopes Mendes.",
+    letterCount: 10,
+    initialLetter: "I",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "music_elis_regina",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Elis_Regina_1972.tif/lossless-page1-960px-Elis_Regina_1972.tif.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Cantora Brasileira",
+    targetName: "ELIS REGINA",
+    normalizedTarget: "ELIS REGINA",
+    aliases: ["ELIS REGINA","ELIS","PIMENTINHA","COMO NOSSOS PAIS","AGUAS DE MARCO"],
+    hint: "A \"Pimentinha\", considerada por muitos a maior cantora do Brasil, de \"Como Nossos Pais\" e \"Águas de Março\".",
+    letterCount: 10,
+    initialLetter: "E",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_gilberto_gil",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Gilberto_Gil_1719MC198.jpg/960px-Gilberto_Gil_1719MC198.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Músico Brasileiro",
+    targetName: "GILBERTO GIL",
+    normalizedTarget: "GILBERTO GIL",
+    aliases: ["GILBERTO GIL","GIL","TROPICALIA","PALCO","ANDAR COM FE","AQUELE ABRACO"],
+    hint: "Mestre da Tropicália, ministro da cultura e imortal da ABL, autor de \"Aquele Abraço\" e \"Andar com Fé\".",
+    letterCount: 11,
+    initialLetter: "G",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_milton_nascimento",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4d/Milton_Nascimento%2C_October_2022.jpg/960px-Milton_Nascimento%2C_October_2022.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Cantor Brasileiro",
+    targetName: "MILTON NASCIMENTO",
+    normalizedTarget: "MILTON NASCIMENTO",
+    aliases: ["MILTON NASCIMENTO","MILTON","BITUCA","CLUBE DA ESQUINA","CORACAO DE ESTUDANTE"],
+    hint: "A voz de ouro do Clube da Esquina, \"Bituca\" conquistou o mundo com sua voz inconfundível.",
+    letterCount: 16,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "place_encontro_aguas",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/79/SOBREVOANDO_O_ENCONTRO_DAS_AGUAS_MANAUS-AM_-_panoramio.jpg/960px-SOBREVOANDO_O_ENCONTRO_DAS_AGUAS_MANAUS-AM_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Fenômeno Natural do Brasil",
+    targetName: "ENCONTRO DAS AGUAS",
+    normalizedTarget: "ENCONTRO DAS AGUAS",
+    aliases: ["ENCONTRO DAS AGUAS","ENCONTRO DAS ÁGUAS","RIO NEGRO E SOLIMOES","RIO AMAZONAS","MANAUS"],
+    hint: "Fenômeno onde as águas escuras do Rio Negro e barrentas do Solimões correm lado a lado sem se misturar.",
+    letterCount: 16,
+    initialLetter: "E",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_lugares",
+    isBrazilian: true
+  },
+  {
+    id: "music_chico_buarque",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/9/90/Chico_Buarque_no_BRAVO.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    category: "Compositor Brasileiro",
+    targetName: "CHICO BUARQUE",
+    normalizedTarget: "CHICO BUARQUE",
+    aliases: ["CHICO BUARQUE","CHICO","BUARQUE","CONSTRUCAO","APESAR DE VOCE","A BANDA"],
+    hint: "Ícone máximo da MPB e da literatura, genial compositor de \"Construção\", \"Cálice\" e \"A Banda\".",
+    letterCount: 12,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_skank",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/01-10-102359-Skank-Samuel-Rosa-Show-01Outubro2010-RiodeJaneiro-Brasil.jpg/120px-01-10-102359-Skank-Samuel-Rosa-Show-01Outubro2010-RiodeJaneiro-Brasil.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Banda Brasileira",
+    targetName: "SKANK",
+    normalizedTarget: "SKANK",
+    aliases: ["SKANK","SAMUEL ROSA","GAROTA NACIONAL","VAMOS FUGIR","PARTIDA DE FUTEBOL","VOU DEIXAR"],
+    hint: "Famosa banda mineira de pop rock e reggae liderada por Samuel Rosa, de \"Garota Nacional\" e \"Vou Deixar\".",
+    letterCount: 5,
+    initialLetter: "S",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_cazuza",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/b/b5/Cazuza_fala_%C3%A0_TVE-RS_em_1988.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    category: "Cantor e Poeta Brasileiro",
+    targetName: "CAZUZA",
+    normalizedTarget: "CAZUZA",
+    aliases: ["CAZUZA","AGENOR DE MIRANDA","BARAO VERMELHO","EXAGERADO","IDEOLOGIA","PRO DIA NASCER FELIZ"],
+    hint: "Poeta e rebelde do rock nacional nos anos 80, líder do Barão Vermelho e autor de \"Exagerado\" e \"Ideologia\".",
+    letterCount: 6,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_gal_costa",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/Gal_Costa_Tom_Brasil_%2845246823335%29.jpg/960px-Gal_Costa_Tom_Brasil_%2845246823335%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Cantora Brasileira",
+    targetName: "GAL COSTA",
+    normalizedTarget: "GAL COSTA",
+    aliases: ["GAL COSTA","GAL","FATAL","BABY","MEU NOME E GAL","CHUVA DE PRATA"],
+    hint: "Musa da Tropicália e voz lendária da MPB com agudos inesquecíveis em \"Baby\" e \"Chuva de Prata\".",
+    letterCount: 8,
+    initialLetter: "G",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_marilia_mendonca",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/1/14/Mar%C3%ADlia_Mendon%C3%A7a_no_programa_Lady_Night_em_2018_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    category: "Cantora Brasileira",
+    targetName: "MARILIA MENDONCA",
+    normalizedTarget: "MARILIA MENDONCA",
+    aliases: ["MARILIA MENDONCA","MARÍLIA MENDONÇA","RAINHA DA SOFRENCIA","SOFRENCIA","INFIEIS","DE QUEM E A CULPA"],
+    hint: "A eterna \"Rainha da Sofrência\" e fenômeno estrondoso do sertanejo e feminejo nacional.",
+    letterCount: 15,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_charlie_brown_jr",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/7/7d/CBJr_Bras%C3%ADlia_2012_Champignon_e_Chor%C3%A3o_%28cropped%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    category: "Banda Brasileira",
+    targetName: "CHARLIE BROWN JR",
+    normalizedTarget: "CHARLIE BROWN JR",
+    aliases: ["CHARLIE BROWN JR","CHARLIE BROWN","CHORAO","CHORÃO","CBJR","SANTOS","DIAS DE LUTA"],
+    hint: "Banda santista de skate rock liderada por Chorão, autora de \"Dias de Luta, Dias de Glória\" e \"Proibida Pra Mim\".",
+    letterCount: 14,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_cartola",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/Rutherford_Hill_Wine_Cave-1369.jpg/960px-Rutherford_Hill_Wine_Cave-1369.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Sambista Brasileiro",
+    targetName: "CARTOLA",
+    normalizedTarget: "CARTOLA",
+    aliases: ["CARTOLA","AGENOR DE OLIVEIRA","MANGUEIRA","AS ROSAS NAO FALAM","O MUNDO E UM MOINHO"],
+    hint: "Poeta maior do samba e fundador da Mangueira, compositor de \"As Rosas Não Falam\" e \"O Mundo é um Moinho\".",
+    letterCount: 7,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_pitty",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/EmmilyBarreto_Pitty_TassiaReis.jpg/960px-EmmilyBarreto_Pitty_TassiaReis.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Cantora Brasileira",
+    targetName: "PITTY",
+    normalizedTarget: "PITTY",
+    aliases: ["PITTY","PRISCILLA NOVAES","EQUALIZER","ADMIRAVEL CHIP NOVO","MASCARA","EQUALIZE"],
+    hint: "Voz marcante do rock brasileiro nos anos 2000 com \"Admirável Chip Novo\", \"Máscara\" e \"Equalize\".",
+    letterCount: 5,
+    initialLetter: "P",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_djavan",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Djavan.jpg/960px-Djavan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Cantor e Compositor Brasileiro",
+    targetName: "DJAVAN",
+    normalizedTarget: "DJAVAN",
+    aliases: ["DJAVAN","OCEANO","SE","SINAI","SAMURAI","ALAGOAS"],
+    hint: "Gênio alagoano da MPB que une sofisticação harmônica e ritmo popular, autor de \"Oceano\" e \"Se\".",
+    letterCount: 6,
+    initialLetter: "D",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_lulu_santos",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/25%C2%BA_Pr%C3%AAmio_da_M%C3%BAsica_Brasileira_%2814006096648%29.jpg/960px-25%C2%BA_Pr%C3%AAmio_da_M%C3%BAsica_Brasileira_%2814006096648%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Cantor Brasileiro",
+    targetName: "LULU SANTOS",
+    normalizedTarget: "LULU SANTOS",
+    aliases: ["LULU SANTOS","LULU","COMO UMA ONDA","TEMPOS MODERNOS","TODA FORMA DE AMOR","APENAS MAIS UMA DE AMOR"],
+    hint: "Hitmaker consagrado do pop brasileiro com \"Tempos Modernos\", \"Como Uma Onda\" e \"Toda Forma de Amor\".",
+    letterCount: 10,
+    initialLetter: "L",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_paralamas",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/00/26_Pr%C3%AAmio_da_M%C3%BAsica_Brasileira_%2818701206962%29.jpg/960px-26_Pr%C3%AAmio_da_M%C3%BAsica_Brasileira_%2818701206962%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Banda Brasileira",
+    targetName: "PARALAMAS DO SUCESSO",
+    normalizedTarget: "PARALAMAS DO SUCESSO",
+    aliases: ["PARALAMAS DO SUCESSO","OS PARALAMAS DO SUCESSO","PARALAMAS","HERBERT VIANNA","MEU ERRO"],
+    hint: "Trio histórico do rock nacional com Herbert Vianna, Bi Ribeiro e Barone, autores de \"Meu Erro\".",
+    letterCount: 18,
+    initialLetter: "P",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_alceu_valenca",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/Alceu_Valenca_Pirenopolis_2023.webm/500px--Alceu_Valenca_Pirenopolis_2023.webm.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo",
+    category: "Cantor e Compositor Brasileiro",
+    targetName: "ALCEU VALENCA",
+    normalizedTarget: "ALCEU VALENCA",
+    aliases: ["ALCEU VALENCA","ALCEU VALENÇA","ALCEU","ANUNCIACAO","TROPICANA","MORENA TROPICANA","OLINDA"],
+    hint: "Mestre pernambucano do frevo, forró e psicodelia nordestina, compositor de \"Anunciação\" e \"Morena Tropicana\".",
+    letterCount: 12,
+    initialLetter: "A",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "music_zeca_pagodinho",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/a/a1/Zeca_Pagodinho.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    category: "Sambista Brasileiro",
+    targetName: "ZECA PAGODINHO",
+    normalizedTarget: "ZECA PAGODINHO",
+    aliases: ["ZECA PAGODINHO","ZECA","DEIXA A VIDA ME LEVAR","PAGODINHO","XEREM","SAMBA"],
+    hint: "Símbolo do samba carioca e carisma puro, famoso pelo hino \"Deixa a Vida Me Levar\".",
+    letterCount: 13,
+    initialLetter: "Z",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_musica",
+    isBrazilian: true
+  },
+  {
+    id: "celeb_tony_ramos",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/6/6d/Tony_Ramos.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    category: "Ator Brasileiro",
+    targetName: "TONY RAMOS",
+    normalizedTarget: "TONY RAMOS",
+    aliases: ["TONY RAMOS","TONI RAMOS","ANTONIO RAMOS","NOVELAS"],
+    hint: "Um dos maiores e mais respeitados atores da teledramaturgia brasileira com décadas de protagonistas.",
+    letterCount: 9,
+    initialLetter: "T",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "celeb_lazaro_ramos",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/1/1f/O_Topo_da_Montanha_Tom_Brasil_%28L%C3%A1zaro_Ramos%29_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    category: "Ator e Diretor Brasileiro",
+    targetName: "LAZARO RAMOS",
+    normalizedTarget: "LAZARO RAMOS",
+    aliases: ["LAZARO RAMOS","LÁZARO RAMOS","LAZARO","MADAME SATA","O HOMEM QUE COPIAVA","FOGUINHO"],
+    hint: "Renomado ator, autor e diretor baiano, com papéis marcantes em \"Madame Satã\" e novelas memoráveis.",
+    letterCount: 11,
+    initialLetter: "L",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "celeb_paulo_gustavo",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ae/Paulo_Gustavo_em_novembro_de_2019_no_Humor_Multishow.png/960px-Paulo_Gustavo_em_novembro_de_2019_no_Humor_Multishow.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Ator e Humorista Brasileiro",
+    targetName: "PAULO GUSTAVO",
+    normalizedTarget: "PAULO GUSTAVO",
+    aliases: ["PAULO GUSTAVO","DONA HERMINIA","MINHA MAE E UMA PECA","HERMINIA","HIPERATIVO"],
+    hint: "Ator e humorista genial idolatrado pelo público, criador da inesquecível \"Dona Hermínia\".",
+    letterCount: 12,
+    initialLetter: "P",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "celeb_chico_anysio",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/Preservar_para_a_eternidade%2C_Hist%C3%B3ria_no_Museu_da_Pessoa_%28146428%29.pdf/page1-960px-Preservar_para_a_eternidade%2C_Hist%C3%B3ria_no_Museu_da_Pessoa_%28146428%29.pdf.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Humorista Brasileiro",
+    targetName: "CHICO ANYSIO",
+    normalizedTarget: "CHICO ANYSIO",
+    aliases: ["CHICO ANYSIO","CHICO ANISIO","PROFESSOR RAIMUNDO","ESCOLINHA DO PROFESSOR RAIMUNDO","PAINHO","SALOME"],
+    hint: "O maior comediante da história da TV brasileira, criador de mais de 200 personagens geniais.",
+    letterCount: 11,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "celeb_fernanda_torres",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/b/bf/Fernanda_Torres%2C_September_2024.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    category: "Atriz e Escritora Brasileira",
+    targetName: "FERNANDA TORRES",
+    normalizedTarget: "FERNANDA TORRES",
+    aliases: ["FERNANDA TORRES","FERNANDINHA TORRES","OS NORMAIS","VANILDA","VARIACOES","AINDA ESTOU AQUI"],
+    hint: "Atriz consagrada e escritora, premiada no Festival de Cannes e estrela da comédia \"Os Normais\".",
+    letterCount: 14,
+    initialLetter: "F",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "celeb_lima_duarte",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/1/1b/Limaduarte.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    category: "Ator Brasileiro",
+    targetName: "LIMA DUARTE",
+    normalizedTarget: "LIMA DUARTE",
+    aliases: ["LIMA DUARTE","SINHOZINHO MALTA","ZECARANGA","SASSA MUTEMA","ROQUE SANTEIRO"],
+    hint: "Ator pioneiro da televisão brasileira, imortalizado como Sinhozinho Malta em \"Roque Santeiro\" e Sassá Mutema.",
+    letterCount: 10,
+    initialLetter: "L",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "celeb_grande_otelo",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Informe_Final_%28tomo_7_-_parte_3%29_-_Comisi%C3%B3n_de_Verdad_y_Justicia.pdf/page1-500px-Informe_Final_%28tomo_7_-_parte_3%29_-_Comisi%C3%B3n_de_Verdad_y_Justicia.pdf.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Ator e Comediante Brasileiro",
+    targetName: "GRANDE OTELO",
+    normalizedTarget: "GRANDE OTELO",
+    aliases: ["GRANDE OTELO","OTELO","SEBASTIAO BERNARDES","CHANCHADA","MACUNAIMA"],
+    hint: "Ícone histórico do cinema e teatro nacional, astro de \"Macunaíma\" e das inesquecíveis chanchadas.",
+    letterCount: 11,
+    initialLetter: "G",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "celeb_gloria_pires",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/9/95/GloriaPires_2013.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    category: "Atriz Brasileira",
+    targetName: "GLORIA PIRES",
+    normalizedTarget: "GLORIA PIRES",
+    aliases: ["GLORIA PIRES","GLÓRIA PIRES","RUTH E RAQUEL","MULHERES DE AREIA","MARIA DE FATIMA","VALE TUDO"],
+    hint: "Uma das mais brilhantes atrizes do país, inesquecível como as gêmeas Ruth e Raquel em \"Mulheres de Areia\".",
+    letterCount: 11,
+    initialLetter: "G",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "celeb_marieta_severo",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/O_cinema_fora_do_armario_cartografia_dos.pdf/page1-960px-O_cinema_fora_do_armario_cartografia_dos.pdf.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Atriz Brasileira",
+    targetName: "MARIETA SEVERO",
+    normalizedTarget: "MARIETA SEVERO",
+    aliases: ["MARIETA SEVERO","DONA NENE","DONA NENÊ","A GRANDE FAMILIA","LINEU"],
+    hint: "Consagrada atriz brasileira, que marcou época no país como a adorada Dona Nenê de \"A Grande Família\".",
+    letterCount: 13,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "celeb_machado_de_assis",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Machado_de_Assis_by_Marc_Ferrez.jpg/960px-Machado_de_Assis_by_Marc_Ferrez.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Escritor Brasileiro",
+    targetName: "MACHADO DE ASSIS",
+    normalizedTarget: "MACHADO DE ASSIS",
+    aliases: ["MACHADO DE ASSIS","MACHADO","DOM CASMURRO","CAPITU","BRUXO DO COSME VELHO","MEMORIAS POSTUMAS"],
+    hint: "Maior escritor da literatura brasileira e fundador da ABL, autor de \"Dom Casmurro\" e \"Memórias Póstumas\".",
+    letterCount: 14,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "fauna_arara_azul",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Hyacinth_macaw_%28Anodorhynchus_hyacinthinus%29_head.JPG/960px-Hyacinth_macaw_%28Anodorhynchus_hyacinthinus%29_head.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Fauna e Símbolo do Brasil",
+    targetName: "ARARA AZUL",
+    normalizedTarget: "ARARA AZUL",
+    aliases: ["ARARA AZUL","ARARA","ARARA AZUL GRANDE","AVES BRASILEIRAS","PANTANAL"],
+    hint: "Ave exuberante de plumagem azul-cobalto símbolo da biodiversidade do Pantanal e do Brasil.",
+    letterCount: 9,
+    initialLetter: "A",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "celeb_matheus_nachtergaele",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6a/26_Pr%C3%AAmio_da_M%C3%BAsica_Brasileira_%2818522888039%29.jpg/960px-26_Pr%C3%AAmio_da_M%C3%BAsica_Brasileira_%2818522888039%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Ator Brasileiro",
+    targetName: "MATHEUS NACHTERGAELE",
+    normalizedTarget: "MATHEUS NACHTERGAELE",
+    aliases: ["MATHEUS NACHTERGAELE","JOAO GRILO","AUTO DA COMPADECIDA","CENOURINHA","CIDADE DE DEUS"],
+    hint: "Ator de imenso talento, inesquecível no papel do esperto João Grilo em \"O Auto da Compadecida\".",
+    letterCount: 19,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "food_tapioca",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/61/P%C3%A3o_com_manteiga_e_mortadela_%2B_Mam%C3%A3o.jpg/960px-P%C3%A3o_com_manteiga_e_mortadela_%2B_Mam%C3%A3o.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Comida Típica do Brasil",
+    targetName: "TAPIOCA",
+    normalizedTarget: "TAPIOCA",
+    aliases: ["TAPIOCA","BEIJU","GOMA DE MANDIOCA","POLVILHO","NORDESTE"],
+    hint: "Delícia indígena feita com fécula de mandioca hidratada aquecida na frigideira com recheios doces ou salgados.",
+    letterCount: 7,
+    initialLetter: "T",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "food_acai",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/96/A%C3%A7a%C3%AD_na_tigela_1.jpg/960px-A%C3%A7a%C3%AD_na_tigela_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Comida Típica do Brasil",
+    targetName: "ACAI",
+    normalizedTarget: "ACAI",
+    aliases: ["ACAI","AÇAÍ","ACAI NA TIGELA","FRUTA DA AMAZONIA","GRANOLA"],
+    hint: "Fruto roxo da Amazônia batido com xarope de guaraná e servido na tigela com granola e frutas.",
+    letterCount: 4,
+    initialLetter: "A",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "fauna_onca_pintada",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/Jaguar_in_Pantanal_Brazil_1_%28cropped%29.jpg/960px-Jaguar_in_Pantanal_Brazil_1_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Fauna e Símbolo do Brasil",
+    targetName: "ONCA PINTADA",
+    normalizedTarget: "ONCA PINTADA",
+    aliases: ["ONCA PINTADA","ONÇA PINTADA","ONCA","JAGUAR","NOTA DE 50","PANTANAL"],
+    hint: "O maior felino das Américas, imponente predador brasileiro estampado na cédula de R$ 50.",
+    letterCount: 11,
+    initialLetter: "O",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "fauna_mico_leao",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/15/Leontopithecus_rosalia_in_S%C3%A3o_Paulo_Zoo.jpg/960px-Leontopithecus_rosalia_in_S%C3%A3o_Paulo_Zoo.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Fauna e Símbolo do Brasil",
+    targetName: "MICO LEAO DOURADO",
+    normalizedTarget: "MICO LEAO DOURADO",
+    aliases: ["MICO LEAO DOURADO","MICO LEÃO DOURADO","MICO","MATA ATLANTICA","NOTA DE 20"],
+    hint: "Primata de juba dourada símbolo da conservação ambiental no Brasil e estampado na cédula de R$ 20.",
+    letterCount: 15,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_famosos",
+    isBrazilian: true
+  },
+  {
+    id: "food_acaraje",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/29/Baiana-acaraj%C3%A9-Salvador.jpg/960px-Baiana-acaraj%C3%A9-Salvador.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Comida Típica do Brasil",
+    targetName: "ACARAJE",
+    normalizedTarget: "ACARAJE",
+    aliases: ["ACARAJE","ACARAJÉ","BAHIA","COMIDA BAIANA","VATAPA","CARURU","DENDE"],
+    hint: "Quitute afro-brasileiro da Bahia de feijão-fradinho frito no azeite de dendê recheado com vatapá e camarão.",
+    letterCount: 7,
+    initialLetter: "A",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "food_moqueca",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/Moqueca_vegana.jpg/960px-Moqueca_vegana.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Comida Típica do Brasil",
+    targetName: "MOQUECA",
+    normalizedTarget: "MOQUECA",
+    aliases: ["MOQUECA","MOQUECA BAIANA","MOQUECA CAPIXABA","PANELA DE BARRO","DENDE","PEIXE"],
+    hint: "Tradicional ensopado aromático brasileiro cozido lentamente em panela de barro.",
+    letterCount: 7,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "food_picanha",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/16/Del_Barbiere_%284624610379%29.jpg/960px-Del_Barbiere_%284624610379%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Comida Típica do Brasil",
+    targetName: "PICANHA",
+    normalizedTarget: "PICANHA",
+    aliases: ["PICANHA","CHURRASCO","CARNE","PICANHA NA BRASA","CHURRASCO GAUCHO"],
+    hint: "O corte nobre mais consagrado do autêntico churrasco brasileiro, com sua famosa capa de gordura.",
+    letterCount: 7,
+    initialLetter: "P",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "food_farofa",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/Revista_Brasileira%2C_Tomo_18_%281899%29.pdf/page1-500px-Revista_Brasileira%2C_Tomo_18_%281899%29.pdf.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Comida Típica do Brasil",
+    targetName: "FAROFA",
+    normalizedTarget: "FAROFA",
+    aliases: ["FAROFA","FAROFA BRASILEIRA","FARINHA DE MANDIOCA","ACOMPANHAMENTO"],
+    hint: "Acompanhamento onipresente na mesa brasileira feito com farinha de mandioca tostada na gordura temperada.",
+    letterCount: 6,
+    initialLetter: "F",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "food_caldo_de_cana",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/Glass_of_sugarcane_juice.jpg/960px-Glass_of_sugarcane_juice.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Bebida Típica do Brasil",
+    targetName: "CALDO DE CANA",
+    normalizedTarget: "CALDO DE CANA",
+    aliases: ["CALDO DE CANA","GARAPA","CANA DE ACUCAR","PASTEL E CALDO DE CANA","FEIRA"],
+    hint: "Doce néctar extraído na hora da cana-de-açúcar, companhia clássica do pastel nas feiras de rua.",
+    letterCount: 11,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "food_baiao_de_dois",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Bai%C3%A3o_de_dois.jpg/960px-Bai%C3%A3o_de_dois.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Comida Típica do Brasil",
+    targetName: "BAIAO DE DOIS",
+    normalizedTarget: "BAIAO DE DOIS",
+    aliases: ["BAIAO DE DOIS","BAIÃO DE DOIS","ARROZ COM FEIJAO DE CORDA","QUEIJO COALHO","CEARA","CARNE SECA"],
+    hint: "Prato clássico nordestino que combina arroz, feijão-de-corda, queijo coalho e carne-seca.",
+    letterCount: 11,
+    initialLetter: "B",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "food_pacoca",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/2/23/Pa%C3%A7oca.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+    category: "Doce Típico do Brasil",
+    targetName: "PACOCA",
+    normalizedTarget: "PACOCA",
+    aliases: ["PACOCA","PAÇOCA","PACOQUINHA","AMENDOIM","PACOCA DE AMENDOIM","FESTA JUNINA"],
+    hint: "Doce tradicional brasileiro feito de amendoim torrado moído com farinha de mandioca e açúcar.",
+    letterCount: 6,
+    initialLetter: "P",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "food_chimarrao",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/48/Erva_mate_chimarrao_in_big_cuia.jpg/960px-Erva_mate_chimarrao_in_big_cuia.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Bebida Típica do Brasil",
+    targetName: "CHIMARRAO",
+    normalizedTarget: "CHIMARRAO",
+    aliases: ["CHIMARRAO","CHIMARRÃO","MATE","ERVA MATE","CUIA","BOMBA","GAUCHO","RIO GRANDE DO SUL"],
+    hint: "Bebida tradicional gaúcha feita com infusão de erva-mate quente servida em cuia com bomba metálica.",
+    letterCount: 9,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "food_biscoito_globo",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Pandeyuca-colombiano.jpg/960px-Pandeyuca-colombiano.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Marca / Produto Típico do Brasil",
+    targetName: "BISCOITO GLOBO",
+    normalizedTarget: "BISCOITO GLOBO",
+    aliases: ["BISCOITO GLOBO","GLOBO","BISCOITO DE POLVILHO","PRAIA DE IPANEMA","RIO DE JANEIRO"],
+    hint: "O tradicional biscoito de polvilho crocante vendido nos saquinhos de papel nas praias do Rio de Janeiro.",
+    letterCount: 13,
+    initialLetter: "B",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "world_big_ben",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f7/Big_Ben_Elizabeth_Tower_London_2023_01.jpg/960px-Big_Ben_Elizabeth_Tower_London_2023_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Monumento Mundial",
+    targetName: "BIG BEN",
+    normalizedTarget: "BIG BEN",
+    aliases: ["BIG BEN","TORRE DO RELOGIO","LONDRES","INGLATERRA","PALACIO DE WESTMINSTER","ELIZABETH TOWER"],
+    hint: "Famosa torre com relógio de quatro faces e grande sino no parlamento britânico em Londres.",
+    letterCount: 6,
+    initialLetter: "B",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "food_cafe",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/A_small_cup_of_coffee.JPG/960px-A_small_cup_of_coffee.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Bebida / Símbolo do Brasil",
+    targetName: "CAFE",
+    normalizedTarget: "CAFE",
+    aliases: ["CAFE","CAFÉ","CAFEZINHO","GRAO DE CAFE","CAFE BRASILEIRO","ESPRESSO"],
+    hint: "A bebida sagrada das manhãs brasileiras, país líder na produção e exportação mundial do grão.",
+    letterCount: 4,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "world_torre_de_pisa",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5f/The_Duomo_and_Tower_of_Pisa_at_sunrise.jpg/960px-The_Duomo_and_Tower_of_Pisa_at_sunrise.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Monumento Mundial",
+    targetName: "TORRE DE PISA",
+    normalizedTarget: "TORRE DE PISA",
+    aliases: ["TORRE DE PISA","TORRE INCLINADA","PISA","ITALIA","CAMPANARIO"],
+    hint: "Famoso campanário de mármore na Itália célebre no mundo inteiro por sua inclinação.",
+    letterCount: 11,
+    initialLetter: "T",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "world_taj_mahal",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/Taj_Mahal_in_March_2004.jpg/960px-Taj_Mahal_in_March_2004.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Monumento Mundial",
+    targetName: "TAJ MAHAL",
+    normalizedTarget: "TAJ MAHAL",
+    aliases: ["TAJ MAHAL","TAJ","MAUSOLEU","AGRA","INDIA","MARAVILHA DO MUNDO"],
+    hint: "Mausoléu de mármore branco em Agra, na Índia, erguido por amor e Maravilha do Mundo.",
+    letterCount: 8,
+    initialLetter: "T",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "food_churros",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/Churros_en_vasos_en_Londres_-_A_Taste_of_Spain.jpg/960px-Churros_en_vasos_en_Londres_-_A_Taste_of_Spain.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Doce Popular do Brasil",
+    targetName: "CHURROS",
+    normalizedTarget: "CHURROS",
+    aliases: ["CHURROS","CHURRO","DOCE DE LEITE","CHURROS DE DOCE DE LEITE"],
+    hint: "Massa crocante estriada frita, passada no açúcar e canela e recheada com doce de leite ou chocolate.",
+    letterCount: 7,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "brasil_marcas_comidas",
+    isBrazilian: true
+  },
+  {
+    id: "world_monte_fuji",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Mt._Fuji_view_from_Lake_Shouji.jpg/960px-Mt._Fuji_view_from_Lake_Shouji.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Natureza Mundial",
+    targetName: "MONTE FUJI",
+    normalizedTarget: "MONTE FUJI",
+    aliases: ["MONTE FUJI","FUJI","FUJISAN","VULCAO","JAPAO"],
+    hint: "Vulcão de cume nevado e cone perfeitamente simétrico, montanha sagrada e símbolo do Japão.",
+    letterCount: 9,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "world_chichen_itza",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/51/Chichen_Itza_3.jpg/960px-Chichen_Itza_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Arqueologia Mundial",
+    targetName: "CHICHEN ITZA",
+    normalizedTarget: "CHICHEN ITZA",
+    aliases: ["CHICHEN ITZA","CHICHÉN ITZÁ","PIRAMIDE DE KUKULCAN","MAIA","MEXICO","YUCATAN"],
+    hint: "Cidade arqueológica maia com a pirâmide de Kukulcán na península de Yucatán no México.",
+    letterCount: 11,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "world_opera_sydney",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/Sydney_%28AU%29%2C_Opera_House_--_2019_--_3054.jpg/960px-Sydney_%28AU%29%2C_Opera_House_--_2019_--_3054.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Monumento Mundial",
+    targetName: "OPERA DE SYDNEY",
+    normalizedTarget: "OPERA DE SYDNEY",
+    aliases: ["OPERA DE SYDNEY","ÓPERA DE SYDNEY","SYDNEY OPERA HOUSE","SYDNEY","AUSTRALIA"],
+    hint: "Edifício espetacular com formato escultural de conchas na baía de Sydney na Austrália.",
+    letterCount: 13,
+    initialLetter: "O",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "world_beatles",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/The_Beatles_Abbey_Road_album_cover.jpg/960px-The_Beatles_Abbey_Road_album_cover.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Banda / Música Mundial",
+    targetName: "THE BEATLES",
+    normalizedTarget: "THE BEATLES",
+    aliases: ["THE BEATLES","BEATLES","OS BEATLES","ABBEY ROAD","JOHN LENNON","PAUL MCCARTNEY"],
+    hint: "A mais famosa banda de rock de todos os tempos, formada em Liverpool pelo quarteto de ouro.",
+    letterCount: 10,
+    initialLetter: "T",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "world_partenon",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Parthenon_from_south.jpg/960px-Parthenon_from_south.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Monumento / História Mundial",
+    targetName: "PARTENON",
+    normalizedTarget: "PARTENON",
+    aliases: ["PARTENON","PARTENÃO","ACROPOLE","ACROPOLE DE ATENAS","ATENAS","GRECIA"],
+    hint: "Templo da Grécia Antiga no topo da Acrópole de Atenas dedicado à deusa Atena.",
+    letterCount: 8,
+    initialLetter: "P",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "world_machu_picchu",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/Historic_Sanctuary_of_Machu_Picchu-109688.jpg/960px-Historic_Sanctuary_of_Machu_Picchu-109688.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Monumento / Arqueologia Mundial",
+    targetName: "MACHU PICCHU",
+    normalizedTarget: "MACHU PICCHU",
+    aliases: ["MACHU PICCHU","CIDADE PERDIDA DOS INCAS","INCAS","PERU","ANDES","CUSCO"],
+    hint: "Histórica cidadela inca do século XV erguida no alto da cordilheira dos Andes no Peru.",
+    letterCount: 11,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "world_david_bowie",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c2/The_David_Bowie_Mural_in_Sheffield_-_geograph.org.uk_-_6088038.jpg/960px-The_David_Bowie_Mural_in_Sheffield_-_geograph.org.uk_-_6088038.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Música Mundial",
+    targetName: "DAVID BOWIE",
+    normalizedTarget: "DAVID BOWIE",
+    aliases: ["DAVID BOWIE","BOWIE","ZIGGY STARDUST","HEROES","SPACE ODDITY","CAMALEAO DO ROCK"],
+    hint: "O Camaleão do Rock britânico, criador de Ziggy Stardust e de clássicos como \"Heroes\" e \"Space Oddity\".",
+    letterCount: 10,
+    initialLetter: "D",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "world_charles_chaplin",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/Chaplin_The_Kid_edit.jpg/960px-Chaplin_The_Kid_edit.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Cinema Mundial",
+    targetName: "CHARLIE CHAPLIN",
+    normalizedTarget: "CHARLIE CHAPLIN",
+    aliases: ["CHARLIE CHAPLIN","CHAPLIN","O VAGABUNDO","CARLITOS","TEMPOS MODERNOS"],
+    hint: "Gênio absoluto do cinema mudo, imortal com seu bigodinho, bengala e o personagem Carlitos.",
+    letterCount: 14,
+    initialLetter: "C",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "world_apollo_lua",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/Aldrin_Apollo_11.jpg/960px-Aldrin_Apollo_11.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "História Mundial",
+    targetName: "HOMEM NA LUA",
+    normalizedTarget: "HOMEM NA LUA",
+    aliases: ["HOMEM NA LUA","POUSO NA LUA","APOLLO 11","NEIL ARMSTRONG","ASTRONAUTA","PISANDO NA LUA","LUA"],
+    hint: "A histórica imagem do homem pisando no solo lunar em 1969 na missão Apollo 11.",
+    letterCount: 10,
+    initialLetter: "H",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "world_van_gogh",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4c/Vincent_van_Gogh_-_Self-Portrait_-_Google_Art_Project_%28454045%29.jpg/960px-Vincent_van_Gogh_-_Self-Portrait_-_Google_Art_Project_%28454045%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Arte Mundial",
+    targetName: "VINCENT VAN GOGH",
+    normalizedTarget: "VINCENT VAN GOGH",
+    aliases: ["VINCENT VAN GOGH","VAN GOGH","A NOITE ESTRELADA","GIRASSOIS","IMPRESSIONISMO"],
+    hint: "Gênio pós-impressionista holandês autor de \"A Noite Estrelada\" e autorretratos inconfundíveis.",
+    letterCount: 14,
+    initialLetter: "V",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
+  },
+  {
+    id: "world_marilyn_monroe",
+    imageUrl: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Marilyn_Monroe_in_Gentlemen_Prefer_Blondes_trailer1.png/960px-Marilyn_Monroe_in_Gentlemen_Prefer_Blondes_trailer1.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    category: "Cinema Mundial",
+    targetName: "MARILYN MONROE",
+    normalizedTarget: "MARILYN MONROE",
+    aliases: ["MARILYN MONROE","MARILYN","NORMA JEANE","HOLLYWOOD"],
+    hint: "Maior ícone de beleza e glamour da era de ouro do cinema em Hollywood no século XX.",
+    letterCount: 13,
+    initialLetter: "M",
+    photoCredit: "Acervo Registrado • Fotografia Autêntica",
+    themeId: "mundo_cultura",
+    isBrazilian: false
   }
 ];
 
@@ -856,14 +1850,25 @@ export function getLevenshteinDistance(a: string, b: string): number {
 
 export interface JuiceValidationResult {
   isCorrect: boolean;
+  isPartial?: boolean;
   isClose: boolean;
   message: string;
   normalizedGuess: string;
+  pointsMultiplier?: number;
+}
+
+const CONNECTORS = new Set(['DE', 'DO', 'DA', 'DOS', 'DAS', 'E', 'O', 'A', 'EM', 'NO', 'NA', 'DEL', 'DI', 'OF', 'THE', 'AND', 'DU', 'D']);
+
+export function getSignificantWords(text: string): string[] {
+  const norm = normalizeJuiceString(text);
+  return norm.split(/\s+/).filter(w => w.length >= 2 && !CONNECTORS.has(w));
 }
 
 /**
  * Validação com tolerância a acentos, pequenas variações de letras (typos)
  * e aviso dinâmico de proximidade ("está próximo / quase lá").
+ * Identifica também respostas "meio certas" (quando o termo é composto por mais de 1 palavra
+ * e o jogador digita apenas parte, ex: "CRISTO" em vez de "CRISTO REDENTOR").
  */
 export function validateJuiceGuessDetailed(guess: string, challenge: JuicePhotoChallenge): JuiceValidationResult {
   const cleanGuess = normalizeJuiceString(guess);
@@ -871,10 +1876,17 @@ export function validateJuiceGuessDetailed(guess: string, challenge: JuicePhotoC
     return { isCorrect: false, isClose: false, message: 'Digite um palpite!', normalizedGuess: '' };
   }
 
+  const fullTargetNorm = normalizeJuiceString(challenge.targetName);
+  const normalizedTargetNorm = normalizeJuiceString(challenge.normalizedTarget);
+
+  const targetWords = getSignificantWords(challenge.targetName);
+  const coreTargetWords = targetWords.length > 0 ? targetWords : getSignificantWords(challenge.normalizedTarget);
+  const isMultiWordChallenge = coreTargetWords.length >= 2;
+
   // Lista de alvos candidatos válidos
   const candidates: string[] = [
-    normalizeJuiceString(challenge.targetName),
-    normalizeJuiceString(challenge.normalizedTarget),
+    fullTargetNorm,
+    normalizedTargetNorm,
     ...challenge.aliases.map(a => normalizeJuiceString(a))
   ];
 
@@ -886,32 +1898,76 @@ export function validateJuiceGuessDetailed(guess: string, challenge: JuicePhotoC
     }
   });
 
+  const checkIsPartial = (matchedCand: string): boolean => {
+    if (!isMultiWordChallenge) return false;
+
+    // Verifica se o palpite cobre todas ou quase todas as palavras centrais do alvo
+    const guessWords = getSignificantWords(cleanGuess);
+    const matchedCoreCount = coreTargetWords.filter(cw =>
+      guessWords.some(gw => gw === cw || getLevenshteinDistance(gw, cw) <= 1 || (gw.length >= 4 && gw.includes(cw)))
+    ).length;
+
+    const isFullTargetMatch = cleanGuess === fullTargetNorm ||
+      cleanGuess === normalizedTargetNorm ||
+      getLevenshteinDistance(cleanGuess, fullTargetNorm) <= 2 ||
+      getLevenshteinDistance(cleanGuess, normalizedTargetNorm) <= 2 ||
+      (matchedCoreCount >= coreTargetWords.length && coreTargetWords.length >= 2);
+
+    // Verifica se o candidato casado é um alias composto que cobre o conceito completo
+    const candidateWords = getSignificantWords(matchedCand);
+    const isCandidateFullPhrase = candidateWords.length >= coreTargetWords.length && candidateWords.length >= 2;
+
+    return !(isFullTargetMatch || isCandidateFullPhrase);
+  };
+
   // 1. Verificação de ACERTO (exato ou com pequenas variações de 1 a 2 letras / typos / acentos)
   for (const cand of candidates) {
     if (!cand) continue;
 
+    let matched = false;
+
     // Correspondência exata normalizada (já ignora acentos, maiúsculas e pontuação)
     if (cleanGuess === cand) {
-      return { isCorrect: true, isClose: true, message: '🎉 Acertou em cheio!', normalizedGuess: cleanGuess };
-    }
+      matched = true;
+    } else {
+      const dist = getLevenshteinDistance(cleanGuess, cand);
 
-    const dist = getLevenshteinDistance(cleanGuess, cand);
-
-    // Tolerância a pequenas diferenças de digitação (1 letra em palavras de tamanho médio, 2 em longas)
-    if (cand.length >= 5 && cand.length <= 7 && dist <= 1) {
-      return { isCorrect: true, isClose: true, message: '🎉 Acertou!', normalizedGuess: cleanGuess };
-    }
-    if (cand.length >= 8 && dist <= 2) {
-      return { isCorrect: true, isClose: true, message: '🎉 Acertou!', normalizedGuess: cleanGuess };
-    }
-
-    // Substring proeminente (ex: digitou "os lencois maranhenses" ou "lencois maranhenses brasil")
-    if (cleanGuess.length >= 5 && cand.length >= 5) {
-      if (cleanGuess.includes(cand) || cand.includes(cleanGuess)) {
-        const ratio = Math.min(cleanGuess.length, cand.length) / Math.max(cleanGuess.length, cand.length);
-        if (ratio >= 0.65) {
-          return { isCorrect: true, isClose: true, message: '🎉 Acertou!', normalizedGuess: cleanGuess };
+      // Tolerância a pequenas diferenças de digitação (1 letra em palavras de tamanho médio, 2 em longas)
+      if (cand.length >= 5 && cand.length <= 7 && dist <= 1) {
+        matched = true;
+      } else if (cand.length >= 8 && dist <= 2) {
+        matched = true;
+      } else if (cleanGuess.length >= 5 && cand.length >= 5) {
+        // Substring proeminente (ex: digitou "os lencois maranhenses" ou "lencois maranhenses brasil")
+        if (cleanGuess.includes(cand) || cand.includes(cleanGuess)) {
+          const ratio = Math.min(cleanGuess.length, cand.length) / Math.max(cleanGuess.length, cand.length);
+          if (ratio >= 0.65) {
+            matched = true;
+          }
         }
+      }
+    }
+
+    if (matched) {
+      const isPartial = checkIsPartial(cand);
+      if (isPartial) {
+        return {
+          isCorrect: true,
+          isPartial: true,
+          isClose: true,
+          pointsMultiplier: 0.5,
+          message: '⚡ Resposta Meio Certa! (Nome composto: 50% dos pontos. Envie o nome completo para 100%!)',
+          normalizedGuess: cleanGuess
+        };
+      } else {
+        return {
+          isCorrect: true,
+          isPartial: false,
+          isClose: true,
+          pointsMultiplier: 1.0,
+          message: '🎉 Acertou em cheio! Resposta completa!',
+          normalizedGuess: cleanGuess
+        };
       }
     }
   }

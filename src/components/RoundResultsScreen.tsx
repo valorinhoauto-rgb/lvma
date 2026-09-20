@@ -175,7 +175,7 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
                     </div>
 
                     {answer ? (
-                      <div className="text-xs font-mono flex items-center gap-1 mt-0.5">
+                      <div className="text-xs font-mono flex items-center gap-1 mt-0.5 flex-wrap">
                         <span className={answer.isValid ? 'text-emerald-300 font-bold' : 'text-rose-400 line-through'}>
                           {answer.rawAnswer.toUpperCase()}
                         </span>
@@ -184,7 +184,12 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
                         ) : (
                           <X className="w-3.5 h-3.5 text-rose-400 inline shrink-0" />
                         )}
-                        {answer.isUnique && answer.isValid && (
+                        {answer.isPartial && (
+                          <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-semibold border border-amber-500/30 shrink-0">
+                            ⚡ Meio Certa (50%)
+                          </span>
+                        )}
+                        {answer.isUnique && answer.isValid && !answer.isPartial && (
                           <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-semibold ml-1 shrink-0">
                             Única
                           </span>

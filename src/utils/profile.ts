@@ -51,42 +51,19 @@ export const ACHIEVEMENTS_LIST: Achievement[] = [
 
 const AVATARS = ['🦊', '🐻', '🦁', '🐼', '🐯', '🦉', '🐺', '🐬', '🦄', '🚀', '⚡', '👑'];
 
-export function getOrCreateUserProfile(): UserProfile {
-  if (typeof window === 'undefined') {
-    return {
-      id: 'usr_guest',
-      name: 'Jogador',
-      avatar: '🦊',
-      level: 1,
-      xp: 0,
-      gamesPlayed: 0,
-      gamesWon: 0,
-      totalCorrectWords: 0,
-      fastestResponseMs: 999999,
-      achievements: []
-    };
-  }
-
-  const stored = localStorage.getItem('stop_termo_profile');
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (!parsed.avatarColor) parsed.avatarColor = 'emerald';
-      if (!parsed.nickname) parsed.nickname = parsed.name;
-      return parsed;
-    } catch {}
-  }
-
+export function createGuestProfile(): UserProfile {
   const randomAvatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
   const randomSuffix = Math.floor(100 + Math.random() * 900);
-  const defaultName = `Jogador${randomSuffix}`;
-  const newProfile: UserProfile = {
+  const defaultName = `Jogador_${randomSuffix}`;
+  return {
     id: 'usr_' + Math.random().toString(36).substring(2, 9),
     name: defaultName,
     nickname: defaultName,
     avatar: randomAvatar,
     avatarColor: 'emerald',
     hasConfiguredProfile: false,
+    nicknameLocked: false,
+    isGoogleAuth: false,
     level: 1,
     xp: 0,
     gamesPlayed: 0,
@@ -95,7 +72,29 @@ export function getOrCreateUserProfile(): UserProfile {
     fastestResponseMs: 999999,
     achievements: []
   };
+}
 
+export function getOrCreateUserProfile(): UserProfile {
+  if (typeof window === 'undefined') {
+    return createGuestProfile();
+  }
+
+  const stored = localStorage.getItem('stop_termo_profile');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (!parsed.avatarColor) parsed.avatarColor = 'emerald';
+      if (!parsed.nickname) parsed.nickname = parsed.name;
+      // If not authenticated with Google, enforce guest status (random nick, locked customization)
+      if (!parsed.isGoogleAuth) {
+        parsed.isGoogleAuth = false;
+        parsed.nicknameLocked = false;
+      }
+      return parsed;
+    } catch {}
+  }
+
+  const newProfile = createGuestProfile();
   localStorage.setItem('stop_termo_profile', JSON.stringify(newProfile));
   return newProfile;
 }

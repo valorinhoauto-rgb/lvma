@@ -34,6 +34,8 @@ export const NicknameSetupModal: React.FC<NicknameSetupModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const checkTimeoutRef = useRef<any>(null);
 
+  if (!isOpen || !userProfile.isGoogleAuth) return null;
+
   useEffect(() => {
     setNickname(userProfile.nickname || userProfile.name || '');
     setSelectedAvatar(userProfile.avatar || '🦊');

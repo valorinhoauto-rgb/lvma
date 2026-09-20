@@ -38,6 +38,8 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
   const [latestFeedback, setLatestFeedback] = useState<{
     isClose: boolean;
     isCorrect: boolean;
+    isPartial?: boolean;
+    points?: number;
     message: string;
     guess: string;
   } | null>(null);
@@ -61,12 +63,15 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
     }
   }, [guesses]);
 
+  const hasFullAnswer = localGuesses.some(g => g.isCorrect && !g.isPartial);
+  const hasPartialAnswer = !hasFullAnswer && localGuesses.some(g => g.isCorrect && g.isPartial);
+
   // Focus input automatically on mount or round change
   useEffect(() => {
-    if (!hasAnswered) {
+    if (!hasFullAnswer) {
       inputRef.current?.focus();
     }
-  }, [hasAnswered, round.roundNumber]);
+  }, [hasFullAnswer, round.roundNumber]);
 
   // Round countdown timer
   useEffect(() => {
@@ -86,7 +91,7 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const clean = inputVal.trim();
-    if (!clean || hasAnswered || isSubmitting) return;
+    if (!clean || hasFullAnswer || isSubmitting) return;
 
     sound.playClick();
     setIsSubmitting(true);
@@ -96,19 +101,26 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
       const res: any = await onSubmitAnswer(clean);
       if (res && res.validation) {
         const val = res.validation;
+        const isPartial = Boolean(val.isPartial);
+        const isValid = Boolean(val.isValid);
+
         setLatestFeedback({
           isClose: Boolean(val.isClose),
-          isCorrect: Boolean(val.isValid),
-          message: val.message || (val.isValid ? 'Acertou!' : 'Incorreto'),
+          isCorrect: isValid,
+          isPartial,
+          points: val.points,
+          message: val.message || (isValid ? 'Acertou!' : 'Incorreto'),
           guess: clean
         });
 
         const newGuessObj: JuiceGuessResult = {
           guess: clean,
-          isCorrect: Boolean(val.isValid),
+          isCorrect: isValid,
+          isPartial,
           isClose: Boolean(val.isClose),
           message: val.message,
-          timeMs: Date.now() - round.startedAt
+          timeMs: Date.now() - round.startedAt,
+          pointsAwarded: val.points
         };
 
         setLocalGuesses(prev => {
@@ -119,7 +131,7 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
           return [...prev, newGuessObj];
         });
 
-        if (val.isValid) {
+        if (isValid) {
           sound.playSuccess();
         } else if (val.isClose) {
           sound.playTick();
@@ -222,8 +234,8 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
               </div>
             </div>
 
-            {/* Banner Dinâmico de Proximidade ("Está Próximo") */}
-            {latestFeedback && !hasAnswered && (
+            {/* Banner Dinâmico de Proximidade ("Está Próximo") ou Feedback */}
+            {latestFeedback && !hasFullAnswer && !hasPartialAnswer && (
               <div
                 className={`p-3.5 rounded-2xl border transition-all animate-in fade-in flex items-center gap-3 ${
                   latestFeedback.isClose
@@ -245,8 +257,37 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
               </div>
             )}
 
-            {/* Input de Resposta Ilimitado */}
-            {!hasAnswered ? (
+            {/* Banner Especial de Resposta Meio Certa (50% dos pontos) */}
+            {hasPartialAnswer && (
+              <div className="bg-amber-950/40 border border-amber-500/40 rounded-2xl p-4 space-y-2 text-amber-300 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-500/20 rounded-xl">
+                      <Sparkles className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                        <span>⚡ Resposta Meio Certa (50% dos pontos)</span>
+                      </div>
+                      <div className="text-base font-black text-white font-mono">
+                        {userAnswer || latestFeedback?.guess}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-amber-300 font-semibold bg-amber-900/50 border border-amber-500/30 px-3 py-1.5 rounded-xl shrink-0">
+                    <Award className="w-4 h-4 text-amber-400" />
+                    <span>+{myPlayer?.roundScore || latestFeedback?.points || 50} pts</span>
+                  </div>
+                </div>
+                <div className="text-xs text-amber-200/90 bg-amber-900/30 border border-amber-500/20 rounded-xl px-3 py-2 flex items-center gap-2">
+                  <span>💡</span>
+                  <span>O termo é composto! Envie o nome completo abaixo para garantir a pontuação máxima (100%):</span>
+                </div>
+              </div>
+            )}
+
+            {/* Input de Resposta Ilimitado (disponível enquanto não enviar a resposta completa) */}
+            {!hasFullAnswer ? (
               <div className="space-y-2">
                 <form onSubmit={handleSubmit} className="flex gap-2">
                   <input
@@ -254,7 +295,7 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
                     id="input-juice-guess"
                     type="text"
                     autoFocus
-                    placeholder="Quem ou o que é isso? Digite e aperte Enter..."
+                    placeholder={hasPartialAnswer ? "Envie o nome completo para 100%..." : "Quem ou o que é isso? Digite e aperte Enter..."}
                     value={inputVal}
                     onChange={(e) => setInputVal(e.target.value)}
                     className="flex-1 bg-slate-950 border border-slate-700 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 text-white rounded-2xl px-5 py-3.5 text-base font-semibold outline-none transition-all placeholder:text-slate-500 uppercase"
@@ -273,7 +314,7 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
                 <div className="flex items-center justify-between text-xs text-slate-400 px-1">
                   <span className="flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-pink-400" />
-                    Sem se preocupar com acentos ou pequenas variações de letras!
+                    {hasPartialAnswer ? 'Você já garantiu metade dos pontos!' : 'Sem se preocupar com acentos ou pequenas variações de letras!'}
                   </span>
                   <span>Tente quantas vezes quiser!</span>
                 </div>
@@ -285,7 +326,9 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
                     <CheckCircle2 className="w-6 h-6 text-emerald-400" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold uppercase tracking-wider text-emerald-400">Você acertou o desafio!</div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                      <span>🎉 Resposta Completa (100%)</span>
+                    </div>
                     <div className="text-base font-black text-white font-mono">{userAnswer || latestFeedback?.guess}</div>
                   </div>
                 </div>
@@ -308,15 +351,27 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
                       key={idx}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all ${
                         g.isCorrect
-                          ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+                          ? g.isPartial
+                            ? 'bg-amber-950/60 border-amber-500/50 text-amber-300'
+                            : 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
                           : g.isClose
-                          ? 'bg-amber-950/60 border-amber-500/60 text-amber-300 shadow-sm animate-pulse'
+                          ? 'bg-amber-950/40 border-amber-500/40 text-amber-300 shadow-sm animate-pulse'
                           : 'bg-slate-950/60 border-slate-800 text-slate-400 line-through'
                       }`}
                     >
-                      {g.isCorrect && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                      {g.isCorrect && !g.isPartial && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                      {g.isCorrect && g.isPartial && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
                       {g.isClose && !g.isCorrect && <Flame className="w-3.5 h-3.5 text-amber-400" />}
                       <span>{g.guess}</span>
+                      {g.isCorrect && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-normal ${
+                          g.isPartial
+                            ? 'bg-amber-500/20 text-amber-300'
+                            : 'bg-emerald-500/20 text-emerald-300'
+                        }`}>
+                          {g.isPartial ? 'Meio Certa (50%)' : 'Completa (100%)'}
+                        </span>
+                      )}
                       {g.isClose && !g.isCorrect && (
                         <span className="text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-300 font-normal">
                           Perto!
