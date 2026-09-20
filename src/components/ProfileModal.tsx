@@ -3,11 +3,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, User, Trophy, Zap, Sparkles, BookOpen, Target, Crown, Check, Save, LogIn, LogOut, History, Award, AlertCircle, Dice5, ShieldCheck } from 'lucide-react';
+import { X, User, Trophy, Zap, Sparkles, BookOpen, Target, Crown, Check, Save, LogIn, LogOut, History, Award, AlertCircle, Dice5, ShieldCheck, Lock, Loader2 } from 'lucide-react';
 import { GameHistoryEntry, UserProfile } from '../types.ts';
 import { ACHIEVEMENTS_LIST, calculateLevel, saveUserProfile } from '../utils/profile.ts';
 import { sound } from '../utils/audio.ts';
-import { auth, loginWithGoogle, logout, fetchUserGameHistory, syncUserProfileToDb, fetchUserProfile } from '../lib/firebase.ts';
+import { auth, loginWithGoogle, logout, fetchUserGameHistory, syncUserProfileToDb, fetchUserProfile, checkNicknameAvailable, reserveNickname } from '../lib/firebase.ts';
 import { AVATAR_CATEGORIES, AVATAR_COLOR_THEMES, generateRandomNickname, getSuggestedNickname } from '../utils/avatarData.ts';
 import { PlayerAvatar } from './PlayerAvatar.tsx';
 
@@ -24,6 +24,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   userProfile,
   onUpdateProfile
 }) => {
+  const isLocked = Boolean(userProfile.nicknameLocked);
   const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'achievements'>('profile');
   const [name, setName] = useState(userProfile.nickname || userProfile.name);
   const [selectedAvatar, setSelectedAvatar] = useState(userProfile.avatar);
@@ -36,6 +37,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [history, setHistory] = useState<GameHistoryEntry[]>([]);
   const [loadingAuth, setLoadingAuth] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [nickError, setNickError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setName(userProfile.nickname || userProfile.name);
@@ -57,14 +60,37 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const levelInfo = calculateLevel(userProfile.xp);
 
   const handleRandomizeNick = () => {
+    if (isLocked) return;
     sound.playClick();
     setName(generateRandomNickname());
+    setNickError(null);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+
     const cleanName = name.trim().replace(/\s+/g, '_');
-    if (!cleanName) return;
+    if (!cleanName || cleanName.length < 3) {
+      setNickError('O nickname deve ter no mínimo 3 caracteres.');
+      sound.playError();
+      return;
+    }
+
+    setSaving(true);
+    setNickError(null);
+
+    // If nickname wasn't locked yet, verify uniqueness and reserve it
+    if (!isLocked) {
+      const checkRes = await checkNicknameAvailable(cleanName, userProfile.id);
+      if (!checkRes.available) {
+        setNickError(checkRes.error || 'Nickname já está em uso por outro jogador!');
+        sound.playError();
+        setSaving(false);
+        return;
+      }
+      await reserveNickname(cleanName, userProfile.id);
+    }
 
     const finalAvatar = useGooglePhoto && userProfile.photoURL ? userProfile.photoURL : selectedAvatar;
 
@@ -74,13 +100,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       nickname: cleanName,
       avatar: finalAvatar,
       avatarColor: selectedColor,
-      hasConfiguredProfile: true
+      hasConfiguredProfile: true,
+      nicknameLocked: true
     };
+
     saveUserProfile(updated);
     syncUserProfileToDb(updated);
     onUpdateProfile(updated);
     sound.playSuccess();
     setSaved(true);
+    setSaving(false);
     setTimeout(() => setSaved(false), 2000);
   };
 
@@ -319,30 +348,64 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Nickname na Partida</span>
+                      <span>{isLocked ? 'Nickname Único (Permanente)' : 'Definir Nickname Único'}</span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={handleRandomizeNick}
-                      className="text-[11px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <Dice5 className="w-3.5 h-3.5" />
-                      <span>Sugerir Aleatório</span>
-                    </button>
+                    {!isLocked && (
+                      <button
+                        type="button"
+                        onClick={handleRandomizeNick}
+                        className="text-[11px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Dice5 className="w-3.5 h-3.5" />
+                        <span>Sugerir Aleatório</span>
+                      </button>
+                    )}
                   </div>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      maxLength={18}
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Ex: RaposaVeloz, Leo_Stop, Bia"
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-bold pr-14"
-                    />
-                    <span className="absolute right-3 top-2.5 text-[11px] text-slate-500 font-mono">
-                      {name.length}/18
-                    </span>
-                  </div>
+
+                  {isLocked ? (
+                    <div className="bg-slate-950 border border-slate-750 rounded-xl p-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                        <div>
+                          <span className="text-sm font-bold text-white font-mono">@{userProfile.nickname || userProfile.name}</span>
+                          <p className="text-[10px] text-slate-400">
+                            Identificação única e permanente. Nicknames não podem ser trocados.
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] uppercase font-bold text-amber-300 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">
+                        Bloqueado
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          maxLength={18}
+                          value={name}
+                          onChange={(e) => {
+                            setName(e.target.value);
+                            setNickError(null);
+                          }}
+                          placeholder="Ex: RaposaVeloz, Leo_Stop, Bia"
+                          className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-bold pr-14"
+                        />
+                        <span className="absolute right-3 top-2.5 text-[11px] text-slate-500 font-mono">
+                          {name.length}/18
+                        </span>
+                      </div>
+                      {nickError && (
+                        <p className="text-xs text-rose-400 font-medium mt-1.5 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          <span>{nickError}</span>
+                        </p>
+                      )}
+                      <p className="text-[10px] text-amber-400/90 mt-1">
+                        ⚠️ Atenção: O nickname só pode ser definido 1 única vez e é único em todo o jogo.
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 {/* Google Photo Toggle (if available) */}
@@ -479,10 +542,25 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-500/20"
+                  disabled={saving}
+                  className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
                 >
-                  {saved ? <Check className="w-4 h-4 text-slate-950" /> : <Save className="w-4 h-4" />}
-                  <span>{saved ? 'Salvo com Sucesso!' : 'Salvar Alterações'}</span>
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                      <span>Validando Nickname Único...</span>
+                    </>
+                  ) : saved ? (
+                    <>
+                      <Check className="w-4 h-4 text-slate-950" />
+                      <span>Salvo com Sucesso!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Salvar Alterações</span>
+                    </>
+                  )}
                 </button>
               </form>
             </>

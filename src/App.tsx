@@ -22,19 +22,31 @@ import { TermoModeView } from './components/TermoModeView.tsx';
 import { WordExplorerModal } from './components/WordExplorerModal.tsx';
 import { ProfileModal } from './components/ProfileModal.tsx';
 import { HowToPlayModal } from './components/HowToPlayModal.tsx';
+import { FriendsModal } from './components/FriendsModal.tsx';
+import { NicknameSetupModal } from './components/NicknameSetupModal.tsx';
 import { useGameSocket } from './hooks/useGameSocket.ts';
 import { getOrCreateUserProfile, saveUserProfile } from './utils/profile.ts';
 import { sound } from './utils/audio.ts';
-import { auth, fetchUserProfile, recordGameHistory, syncUserProfileToDb } from './lib/firebase.ts';
-import { GameMode } from './types.ts';
+import { auth, fetchUserProfile, recordGameHistory, syncUserProfileToDb, fetchFriendsFromDb, saveFriendToDb, removeFriendFromDb } from './lib/firebase.ts';
+import { GameMode, Friend, Player } from './types.ts';
 
 export default function App() {
   const [userProfile, setUserProfile] = useState(() => getOrCreateUserProfile());
   const [showProfile, setShowProfile] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [showDictionary, setShowDictionary] = useState(false);
+  const [showFriends, setShowFriends] = useState(false);
+  const [showNicknameSetup, setShowNicknameSetup] = useState(() => !userProfile.nicknameLocked && !userProfile.hasConfiguredProfile);
   const [termoModeActive, setTermoModeActive] = useState(false);
   const [joinAlert, setJoinAlert] = useState<string | null>(null);
+  const [friends, setFriends] = useState<Friend[]>(() => {
+    try {
+      const stored = localStorage.getItem('malm_friends');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
   const gameHistorySavedRef = useRef<string | null>(null);
 
   const {
@@ -46,7 +58,7 @@ export default function App() {
     clearHostLeftMessage,
     createRoom,
     joinRoom,
-    addBot,
+    kickPlayer,
     updateSettings,
     startGame,
     submitAnswer,
@@ -58,7 +70,7 @@ export default function App() {
     leaveRoom
   } = useGameSocket(userProfile);
 
-  // Sync Firebase Auth State
+  // Sync Firebase Auth State and Cloud Friends
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
@@ -67,6 +79,9 @@ export default function App() {
         if (remoteProfile) {
           setUserProfile(remoteProfile);
           saveUserProfile(remoteProfile);
+          if (remoteProfile.nicknameLocked) {
+            setShowNicknameSetup(false);
+          }
         } else {
           const syncedProfile = {
             ...userProfile,
@@ -76,6 +91,13 @@ export default function App() {
           setUserProfile(syncedProfile);
           saveUserProfile(syncedProfile);
           await syncUserProfileToDb(syncedProfile);
+        }
+
+        // Fetch cloud friends
+        const cloudFriends = await fetchFriendsFromDb(fbUser.uid);
+        if (cloudFriends && cloudFriends.length > 0) {
+          setFriends(cloudFriends);
+          localStorage.setItem('malm_friends', JSON.stringify(cloudFriends));
         }
       }
     });
@@ -112,21 +134,48 @@ export default function App() {
     }
   }, [room?.status, room?.roomId]);
 
-  // Quick Play handler: creates a room with chosen mode, adds 1 bot, and starts
+  // Add friend handler
+  const handleAddFriend = (friend: Friend) => {
+    if (friends.some(f => f.id === friend.id || (friend.nickname && f.nickname?.toLowerCase() === friend.nickname.toLowerCase()))) {
+      return;
+    }
+    const updated = [friend, ...friends];
+    setFriends(updated);
+    localStorage.setItem('malm_friends', JSON.stringify(updated));
+    saveFriendToDb(userProfile.id, friend);
+  };
+
+  const handleAddFriendFromPlayer = (player: Player) => {
+    const friendData: Friend = {
+      id: player.id,
+      nickname: player.nickname || player.name,
+      name: player.name,
+      avatar: player.avatar,
+      avatarColor: player.avatarColor,
+      level: 1,
+      addedAt: new Date().toISOString()
+    };
+    handleAddFriend(friendData);
+  };
+
+  // Remove friend handler
+  const handleRemoveFriend = (friendId: string) => {
+    const updated = friends.filter(f => f.id !== friendId);
+    setFriends(updated);
+    localStorage.setItem('malm_friends', JSON.stringify(updated));
+    removeFriendFromDb(userProfile.id, friendId);
+  };
+
+  // Quick Play handler: creates a room with chosen mode and enters lobby
   const handleQuickPlay = async (mode: GameMode = 'stop_termo') => {
     sound.playClick();
-    const roomId = await createRoom({
+    await createRoom({
       gameMode: mode,
       totalRounds: 3,
       timeLimit: 30,
       scoringStyle: 'dynamic',
       juiceTheme: 'brasil_geral'
     });
-    if (roomId) {
-      setTimeout(async () => {
-        await addBot();
-      }, 300);
-    }
   };
 
   // Create room with custom mode
@@ -177,8 +226,11 @@ export default function App() {
             room={room}
             currentUserId={userProfile.id}
             chatMessages={chatMessages}
+            friends={friends}
             onStartGame={startGame}
-            onAddBot={addBot}
+            onKickPlayer={kickPlayer}
+            onAddFriend={handleAddFriendFromPlayer}
+            onOpenFriendsModal={() => setShowFriends(true)}
             onUpdateSettings={updateSettings}
             onSendChat={sendChat}
             onLeaveRoom={leaveRoom}
@@ -274,6 +326,8 @@ export default function App() {
       {/* Global Navigation Header */}
       <Header
         userProfile={userProfile}
+        friendsCount={friends.length}
+        onOpenFriends={() => setShowFriends(true)}
         onOpenProfile={() => setShowProfile(true)}
         onOpenHowToPlay={() => setShowHowToPlay(true)}
         onOpenDictionary={() => setShowDictionary(true)}
@@ -319,6 +373,27 @@ export default function App() {
         onClose={() => setShowProfile(false)}
         userProfile={userProfile}
         onUpdateProfile={handleUpdateProfile}
+      />
+
+      <FriendsModal
+        isOpen={showFriends}
+        onClose={() => setShowFriends(false)}
+        currentUser={userProfile}
+        friends={friends}
+        onAddFriend={handleAddFriend}
+        onRemoveFriend={handleRemoveFriend}
+        currentRoomId={room?.roomId}
+      />
+
+      <NicknameSetupModal
+        isOpen={showNicknameSetup}
+        onClose={() => setShowNicknameSetup(false)}
+        userProfile={userProfile}
+        onSaveProfile={(updated) => {
+          handleUpdateProfile(updated);
+          setShowNicknameSetup(false);
+        }}
+        isFirstLogin={!userProfile.nicknameLocked}
       />
 
       <HowToPlayModal

@@ -3,11 +3,11 @@
  */
 
 import React, { useState } from 'react';
-import { Copy, Check, Users, Bot, Settings, Play, ArrowLeft, Send, Sparkles, Clock, Trophy, HelpCircle, Flame } from 'lucide-react';
+import { Copy, Check, Users, Settings, Play, ArrowLeft, Send, Sparkles, Clock, Trophy, HelpCircle, Flame, UserX, UserPlus } from 'lucide-react';
 import { CATEGORIES } from '../data/words.ts';
 import { JUICE_THEMES } from '../data/juicePhotos.ts';
 import { ChatMessage } from '../hooks/useGameSocket.ts';
-import { GameMode, Player, RoomSettings, RoomState } from '../types.ts';
+import { GameMode, Player, RoomSettings, RoomState, Friend } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { PlayerAvatar } from './PlayerAvatar.tsx';
 
@@ -15,8 +15,11 @@ interface LobbyScreenProps {
   room: RoomState;
   currentUserId: string;
   chatMessages: ChatMessage[];
+  friends: Friend[];
   onStartGame: () => void;
-  onAddBot: () => void;
+  onKickPlayer: (playerId: string) => void;
+  onAddFriend: (player: Player) => void;
+  onOpenFriendsModal: () => void;
   onUpdateSettings: (settings: Partial<RoomSettings>) => void;
   onSendChat: (text: string) => void;
   onLeaveRoom: () => void;
@@ -26,8 +29,11 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   room,
   currentUserId,
   chatMessages,
+  friends,
   onStartGame,
-  onAddBot,
+  onKickPlayer,
+  onAddFriend,
+  onOpenFriendsModal,
   onUpdateSettings,
   onSendChat,
   onLeaveRoom
@@ -146,56 +152,97 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 <h2 className="font-bold text-base text-white">Jogadores na Sala ({room.players.length})</h2>
               </div>
 
-              {isHost && (
-                <button
-                  id="btn-add-bot"
-                  onClick={() => {
-                    sound.playClick();
-                    onAddBot();
-                  }}
-                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold rounded-lg border border-slate-700 flex items-center gap-1.5 transition-colors"
-                >
-                  <Bot className="w-3.5 h-3.5 text-teal-400" />
-                  <span>+ Adicionar Bot</span>
-                </button>
-              )}
+              <button
+                id="btn-open-friends"
+                onClick={() => {
+                  sound.playClick();
+                  onOpenFriendsModal();
+                }}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-emerald-300 text-xs font-bold rounded-xl border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Amigos & Convidar</span>
+              </button>
             </div>
 
             {/* Players Grid */}
             <div className="grid sm:grid-cols-2 gap-3">
               {room.players.map((p) => {
                 const isCurrent = p.id === currentUserId;
+                const isFriend = friends.some(
+                  (f) => f.id === p.id || (p.nickname && f.nickname && f.nickname.toLowerCase() === p.nickname.toLowerCase())
+                );
+
                 return (
                   <div
                     key={p.id}
-                    className={`flex items-center justify-between p-3 rounded-xl border ${
+                    className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
                       isCurrent
                         ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
                         : 'bg-slate-950/60 border-slate-800 text-slate-200'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <PlayerAvatar avatar={p.avatar} avatarColor={p.avatarColor} size="md" />
-                      <div>
-                        <div className="text-sm font-bold flex items-center gap-1.5">
-                          <span>{p.name}</span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold flex items-center gap-1.5 truncate">
+                          <span className="truncate">{p.name}</span>
                           {p.isHost && (
-                            <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-semibold">
+                            <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-semibold shrink-0">
                               👑 Host
                             </span>
                           )}
-                          {p.isBot && (
-                            <span className="text-[10px] bg-teal-500/20 text-teal-300 px-1.5 py-0.2 rounded font-semibold">
-                              BOT
-                            </span>
-                          )}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-medium">
-                          {isCurrent ? 'Você' : p.isBot ? 'Simulado' : 'Online'}
+                        <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 truncate">
+                          {p.nickname && <span className="font-mono text-slate-400">@{p.nickname}</span>}
+                          <span>•</span>
+                          <span>{isCurrent ? 'Você' : 'Online'}</span>
                         </div>
                       </div>
                     </div>
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      {/* Add Friend Button if not current user */}
+                      {!isCurrent && (
+                        <>
+                          {isFriend ? (
+                            <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                              <Check className="w-3 h-3" /> Amigo
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                sound.playClick();
+                                onAddFriend(p);
+                              }}
+                              className="text-[10px] text-teal-300 hover:text-teal-200 font-bold flex items-center gap-1 bg-teal-500/10 hover:bg-teal-500/20 px-2 py-0.5 rounded-md border border-teal-500/30 transition-colors cursor-pointer"
+                              title={`Adicionar ${p.name} aos amigos`}
+                            >
+                              <UserPlus className="w-3 h-3" />
+                              <span>Adicionar</span>
+                            </button>
+                          )}
+                        </>
+                      )}
+
+                      {/* Host Kick Button if current user is host and target is not current user */}
+                      {isHost && !isCurrent && (
+                        <button
+                          onClick={() => {
+                            sound.playError();
+                            onKickPlayer(p.id);
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg border border-transparent hover:border-rose-500/30 transition-colors cursor-pointer"
+                          title={`Remover ${p.name} da sala`}
+                        >
+                          <UserX className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {isCurrent && (
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                      )}
+                    </div>
                   </div>
                 );
               })}

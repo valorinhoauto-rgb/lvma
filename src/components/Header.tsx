@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { Volume2, VolumeX, HelpCircle, BookOpen, User, Sparkles } from 'lucide-react';
+import { Volume2, VolumeX, HelpCircle, BookOpen, User, Sparkles, Users } from 'lucide-react';
 import { sound } from '../utils/audio.ts';
 import { UserProfile } from '../types.ts';
 import { calculateLevel } from '../utils/profile.ts';
@@ -11,17 +11,21 @@ import { PlayerAvatar } from './PlayerAvatar.tsx';
 
 interface HeaderProps {
   userProfile: UserProfile;
+  friendsCount?: number;
   onOpenProfile: () => void;
   onOpenHowToPlay: () => void;
   onOpenDictionary: () => void;
+  onOpenFriends?: () => void;
   onLogoClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   userProfile,
+  friendsCount = 0,
   onOpenProfile,
   onOpenHowToPlay,
   onOpenDictionary,
+  onOpenFriends,
   onLogoClick
 }) => {
   const [isMuted, setIsMuted] = useState(sound.getMuted());
@@ -57,6 +61,24 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Friends List button */}
+          {onOpenFriends && (
+            <button
+              id="btn-nav-friends"
+              onClick={onOpenFriends}
+              title="Lista de Amigos"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Users className="w-4 h-4 text-teal-400" />
+              <span className="hidden md:inline">Amigos</span>
+              {friendsCount > 0 && (
+                <span className="bg-teal-500/20 text-teal-300 text-[10px] font-bold px-1.5 py-0.2 rounded-full border border-teal-500/30 font-mono">
+                  {friendsCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* Dictionary & Suggestions */}
           <button
             id="btn-nav-dictionary"

@@ -28,7 +28,6 @@ class ClientGameEngine {
   private eventListeners: Set<GameEventListener> = new Set();
   private firestoreUnsub: Unsubscribe | null = null;
   private timerHandle: any = null;
-  private botTimers: any[] = [];
   private possibleCurrentWords: WordEntry[] = [];
   private usedCombinations: Set<string> = new Set();
   private usedPhotoIds: Set<string> = new Set();
@@ -364,9 +363,6 @@ class ClientGameEngine {
     this.notify('room:update', { room: this.activeRoom });
     this.syncToFirestore(this.activeRoom);
 
-    // Schedule bots answers
-    this.scheduleBotAnswers(round);
-
     // Round timer (exceto no modo termo_multiplayer, que não tem limite de tempo)
     if (this.activeRoom.settings.gameMode !== 'termo_multiplayer') {
       const durationMs = (round.timeLimit * 1000) + 500;
@@ -376,67 +372,6 @@ class ClientGameEngine {
     }
 
     return this.activeRoom;
-  }
-
-  private scheduleBotAnswers(round: RoundConfig) {
-    if (!this.activeRoom) return;
-    const bots = this.activeRoom.players.filter(p => p.isBot);
-
-    // Se for termo multiplayer, bots enviam de 2 a 5 palpites progressivos com intervalo natural
-    if (this.activeRoom.settings.gameMode === 'termo_multiplayer') {
-      const targetWord = round.targetWord || '';
-      const candidateWords = this.possibleCurrentWords.filter(w => w.length === round.wordLength);
-
-      for (const bot of bots) {
-        const willWin = Math.random() < 0.85;
-        const totalGuesses = willWin ? Math.floor(Math.random() * 3) + 2 : 5; // 2 a 4 se vencer, 5 se esgotar
-
-        let delayMs = Math.floor(Math.random() * 4000) + 3500;
-        for (let g = 1; g <= totalGuesses; g++) {
-          const isWinningGuess = willWin && g === totalGuesses;
-          let guessWord = '';
-          if (isWinningGuess) {
-            guessWord = targetWord;
-          } else {
-            const picked = candidateWords[Math.floor(Math.random() * candidateWords.length)];
-            guessWord = picked ? picked.normalized : `${round.letter}PALAVRA`.slice(0, round.wordLength);
-          }
-
-          const currentDelay = delayMs;
-          const t = setTimeout(() => {
-            if (this.activeRoom && this.activeRoom.status === 'round_active' && !bot.hasAnswered) {
-              this.submitAnswer(bot.id, guessWord);
-            }
-          }, currentDelay);
-          this.botTimers.push(t);
-          delayMs += Math.floor(Math.random() * 5000) + 4000;
-        }
-      }
-      return;
-    }
-
-    for (const bot of bots) {
-      const willAnswer = Math.random() < 0.90;
-      if (!willAnswer) continue;
-
-      let chosenText = '';
-      if (round.photoChallenge) {
-        chosenText = round.photoChallenge.targetName;
-      } else if (this.possibleCurrentWords.length > 0) {
-        const picked = this.possibleCurrentWords[Math.floor(Math.random() * this.possibleCurrentWords.length)];
-        chosenText = picked.word;
-      } else {
-        chosenText = `${round.letter}PALAVRA`;
-      }
-
-      const delaySec = Math.floor(Math.random() * (round.timeLimit * 0.65)) + 3;
-      const t = setTimeout(() => {
-        if (this.activeRoom && this.activeRoom.status === 'round_active') {
-          this.submitAnswer(bot.id, chosenText);
-        }
-      }, delaySec * 1000);
-      this.botTimers.push(t);
-    }
   }
 
   public submitAnswer(playerId: string, rawAnswer: string) {
@@ -638,18 +573,9 @@ class ClientGameEngine {
     const votingSecs = this.activeRoom.settings.votingTimeSeconds || 20;
     this.activeRoom.votingEndsAt = Date.now() + (votingSecs * 1000);
 
-    // Initial bot automated votes
-    const bots = this.activeRoom.players.filter(p => p.isBot);
+    // Initialize round answers voting structure
     for (const ans of Object.values(this.activeRoom.roundAnswers)) {
       ans.votes = { yes: 0, no: 0, voterIds: {} };
-      for (const bot of bots) {
-        if (bot.id !== ans.playerId) {
-          const approves = ans.inDictionary || (ans.rawAnswer.length >= 3 && Math.random() < 0.85);
-          ans.votes.voterIds[bot.id] = approves;
-          if (approves) ans.votes.yes++;
-          else ans.votes.no++;
-        }
-      }
     }
 
     this.notify('round:voting_start', {
@@ -793,10 +719,6 @@ class ClientGameEngine {
       clearTimeout(this.timerHandle);
       this.timerHandle = null;
     }
-    for (const t of this.botTimers) {
-      clearTimeout(t);
-    }
-    this.botTimers = [];
   }
 
   public async leaveRoom() {

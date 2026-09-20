@@ -25,7 +25,6 @@ export class Room {
   public state: RoomState;
   public clients: Map<string, WebSocket> = new Map(); // playerId -> WebSocket
   public timerHandle: NodeJS.Timeout | null = null;
-  public botTimerHandles: NodeJS.Timeout[] = [];
   public usedCombinations: Set<string> = new Set();
   public usedPhotoIds: Set<string> = new Set();
   public possibleCurrentWords: WordEntry[] = [];
@@ -79,22 +78,24 @@ export class Room {
     this.broadcast('room:update', { room: this.state });
   }
 
-  public addBotPlayer(name: string, avatar: string = '🤖') {
-    const botId = 'bot_' + Math.random().toString(36).substring(2, 7);
-    const bot: Player = {
-      id: botId,
-      name,
-      avatar,
-      isHost: false,
-      isBot: true,
-      score: 0,
-      roundScore: 0,
-      hasAnswered: false,
-      isReady: true
-    };
-    this.state.players.push(bot);
+  public kickPlayer(targetPlayerId: string) {
+    if (this.state.hostId === targetPlayerId) return;
+    this.state.players = this.state.players.filter(p => p.id !== targetPlayerId);
+    if (!this.state.kickedPlayerIds) {
+      this.state.kickedPlayerIds = [];
+    }
+    if (!this.state.kickedPlayerIds.includes(targetPlayerId)) {
+      this.state.kickedPlayerIds.push(targetPlayerId);
+    }
+    const client = this.clients.get(targetPlayerId);
+    if (client) {
+      try {
+        client.send(JSON.stringify({ event: 'player:kicked', playerId: targetPlayerId }));
+        client.close();
+      } catch {}
+      this.clients.delete(targetPlayerId);
+    }
     this.broadcastState();
-    return bot;
   }
 
   public removePlayer(playerId: string) {
@@ -238,79 +239,12 @@ export class Room {
     });
     this.broadcastState();
 
-    // Schedule bots answers
-    this.scheduleBotAnswers(round);
-
     // Schedule authoritative round end (exceto no modo termo_multiplayer, que não tem limite de tempo)
     if (this.state.settings.gameMode !== 'termo_multiplayer') {
       const durationMs = (round.timeLimit * 1000) + 500;
       this.timerHandle = setTimeout(() => {
         this.handleRoundTimeUp();
       }, durationMs);
-    }
-  }
-
-  private scheduleBotAnswers(round: RoundConfig) {
-    const bots = this.state.players.filter(p => p.isBot);
-
-    // Se for termo multiplayer, bots enviam de 2 a 5 palpites progressivos
-    if (this.state.settings.gameMode === 'termo_multiplayer') {
-      const targetWord = round.targetWord || '';
-      const candidateWords = this.possibleCurrentWords.filter(w => w.length === round.wordLength);
-
-      for (const bot of bots) {
-        const willWin = Math.random() < 0.85;
-        const totalGuesses = willWin ? Math.floor(Math.random() * 3) + 2 : 5; // 2 a 4 se vencer, 5 se esgotar
-
-        let delayMs = Math.floor(Math.random() * 4000) + 3500;
-        for (let g = 1; g <= totalGuesses; g++) {
-          const isWinningGuess = willWin && g === totalGuesses;
-          let guessWord = '';
-          if (isWinningGuess) {
-            guessWord = targetWord;
-          } else {
-            const picked = candidateWords[Math.floor(Math.random() * candidateWords.length)];
-            guessWord = picked ? picked.normalized : `${round.letter}PALAVRA`.slice(0, round.wordLength);
-          }
-
-          const currentDelay = delayMs;
-          const handle = setTimeout(() => {
-            if (this.state.status === 'round_active' && !bot.hasAnswered) {
-              this.submitAnswer(bot.id, guessWord);
-            }
-          }, currentDelay);
-          this.botTimerHandles.push(handle);
-          delayMs += Math.floor(Math.random() * 5000) + 4000;
-        }
-      }
-      return;
-    }
-
-    for (const bot of bots) {
-      const willAnswer = Math.random() < 0.90;
-      if (!willAnswer) continue;
-
-      let chosenText = '';
-      if (round.photoChallenge) {
-        chosenText = round.photoChallenge.targetName;
-      } else if (this.possibleCurrentWords.length > 0) {
-        const picked = this.possibleCurrentWords[Math.floor(Math.random() * this.possibleCurrentWords.length)];
-        chosenText = picked.word;
-      } else {
-        continue;
-      }
-
-      const minDelay = 4000;
-      const maxDelay = Math.max(5000, (round.timeLimit - 4) * 1000);
-      const delay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
-
-      const handle = setTimeout(() => {
-        if (this.state.status === 'round_active') {
-          this.submitAnswer(bot.id, chosenText);
-        }
-      }, delay);
-
-      this.botTimerHandles.push(handle);
     }
   }
 
@@ -523,21 +457,9 @@ export class Room {
     const votingSecs = this.state.settings.votingTimeSeconds || 20;
     this.state.votingEndsAt = Date.now() + (votingSecs * 1000);
 
-    // Initial bot automated votes: bots vote YES for valid dictionary words or creative zoeira!
-    const bots = this.state.players.filter(p => p.isBot);
+    // Initialize votes for all round answers
     for (const ans of Object.values(this.state.roundAnswers)) {
-      // Initialize votes
       ans.votes = { yes: 0, no: 0, voterIds: {} };
-
-      // Se for bot, vota a favor ou com 85% de aprovação para respostas no tamanho certo
-      for (const bot of bots) {
-        if (bot.id !== ans.playerId) {
-          const approves = ans.inDictionary || (ans.rawAnswer.length >= 3 && Math.random() < 0.85);
-          ans.votes.voterIds[bot.id] = approves;
-          if (approves) ans.votes.yes++;
-          else ans.votes.no++;
-        }
-      }
     }
 
     this.broadcast('round:voting_start', {
@@ -725,10 +647,6 @@ export class Room {
       clearTimeout(this.timerHandle);
       this.timerHandle = null;
     }
-    for (const handle of this.botTimerHandles) {
-      clearTimeout(handle);
-    }
-    this.botTimerHandles = [];
   }
 }
 

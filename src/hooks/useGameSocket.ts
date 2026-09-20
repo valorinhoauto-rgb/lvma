@@ -30,6 +30,15 @@ export function useGameSocket(userProfile: UserProfile) {
   // Subscribe to clientGameEngine updates
   useEffect(() => {
     const unsubRoom = clientGameEngine.subscribe((updatedRoom) => {
+      if (updatedRoom.kickedPlayerIds?.includes(userProfile.id)) {
+        sound.playError();
+        setHostLeftMessage('Você foi removido da sala pelo anfitrião.');
+        currentRoomIdRef.current = null;
+        clientGameEngine.leaveRoom();
+        setRoom(null);
+        setChatMessages([]);
+        return;
+      }
       setRoom({ ...updatedRoom });
       if (updatedRoom.chatMessages && updatedRoom.chatMessages.length > 0) {
         setChatMessages(updatedRoom.chatMessages);
@@ -40,7 +49,16 @@ export function useGameSocket(userProfile: UserProfile) {
       if (event === 'round:start') sound.playClick();
       else if (event === 'round:voting_start') sound.playClick();
       else if (event === 'round:vote_cast') sound.playKeypress();
-      else if (event === 'juice:guess_result') {
+      else if (event === 'player:kicked') {
+        if (payload?.playerId === userProfile.id) {
+          sound.playError();
+          setHostLeftMessage('Você foi removido da sala pelo anfitrião.');
+          currentRoomIdRef.current = null;
+          clientGameEngine.leaveRoom();
+          setRoom(null);
+          setChatMessages([]);
+        }
+      } else if (event === 'juice:guess_result') {
         if (payload.playerId === userProfile.id) {
           if (payload.isCorrect) sound.playSuccess();
           else if (payload.isClose) sound.playTick();
@@ -103,7 +121,33 @@ export function useGameSocket(userProfile: UserProfile) {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          if (data.event === 'player:kicked' && data.playerId === userProfile.id) {
+            sound.playError();
+            setHostLeftMessage('Você foi removido da sala pelo anfitrião.');
+            currentRoomIdRef.current = null;
+            if (wsRef.current) {
+              wsRef.current.close();
+              wsRef.current = null;
+            }
+            clientGameEngine.leaveRoom();
+            setRoom(null);
+            setChatMessages([]);
+            return;
+          }
           if (data.event === 'room:update') {
+            if (data.room?.kickedPlayerIds?.includes(userProfile.id)) {
+              sound.playError();
+              setHostLeftMessage('Você foi removido da sala pelo anfitrião.');
+              currentRoomIdRef.current = null;
+              if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+              }
+              clientGameEngine.leaveRoom();
+              setRoom(null);
+              setChatMessages([]);
+              return;
+            }
             setRoom(data.room);
           } else if (data.event === 'round:start') {
             sound.playClick();
@@ -272,16 +316,20 @@ export function useGameSocket(userProfile: UserProfile) {
     return false;
   };
 
-  // Add simulated bot
-  const addBot = async () => {
+  // Kick player from room (Host action)
+  const kickPlayer = async (targetPlayerId: string) => {
     if (!room) return;
     if (useClientEngineRef.current) {
-      const updated = clientGameEngine.addBot();
+      const updated = clientGameEngine.kickPlayer(targetPlayerId);
       if (updated) setRoom({ ...updated });
       return;
     }
     try {
-      const res = await fetch(`/api/rooms/${room.roomId}/bot`, { method: 'POST' });
+      const res = await fetch(`/api/rooms/${room.roomId}/kick`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: targetPlayerId })
+      });
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
@@ -289,10 +337,10 @@ export function useGameSocket(userProfile: UserProfile) {
         return;
       }
     } catch {
-      // Fallback
+      // Fallback to client engine
     }
     useClientEngineRef.current = true;
-    const updated = clientGameEngine.addBot();
+    const updated = clientGameEngine.kickPlayer(targetPlayerId);
     if (updated) setRoom({ ...updated });
   };
 
@@ -519,7 +567,7 @@ export function useGameSocket(userProfile: UserProfile) {
     clearHostLeftMessage: () => setHostLeftMessage(null),
     createRoom,
     joinRoom,
-    addBot,
+    kickPlayer,
     updateSettings,
     startGame,
     submitAnswer,

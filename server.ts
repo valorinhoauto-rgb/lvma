@@ -248,18 +248,16 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  // Add bot to room
-  app.post('/api/rooms/:id/bot', (req, res) => {
+  // Kick player from room (Host action)
+  app.post('/api/rooms/:id/kick', (req, res) => {
     const room = gameManager.getRoom(req.params.id);
     if (!room) {
       return res.status(404).json({ error: 'Sala não encontrada.' });
     }
-
-    const botNames = ['Ana Robô', 'Carlos Bot', 'Beatriz IA', 'Lucas Bot', 'Sofia IA', 'Tiago Bot'];
-    const botAvatars = ['🤖', '🦾', '👾', '🎯', '🚀', '⚡'];
-    const randomIndex = Math.floor(Math.random() * botNames.length);
-
-    room.addBotPlayer(botNames[randomIndex], botAvatars[randomIndex]);
+    const { playerId } = req.body;
+    if (playerId) {
+      room.kickPlayer(playerId);
+    }
     res.json({ success: true, room: room.state });
   });
 
