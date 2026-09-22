@@ -4,11 +4,13 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Trophy, Medal, RotateCcw, Home, Sparkles, Award } from 'lucide-react';
-import { RoomState, UserProfile } from '../types.ts';
+import { Trophy, RotateCcw, Home, Sparkles, Award, PartyPopper } from 'lucide-react';
+import { motion } from 'motion/react';
+import { RoomState } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { addXpToProfile, unlockAchievement } from '../utils/profile.ts';
 import { PlayerAvatar } from './PlayerAvatar.tsx';
+import { triggerWinnerConfetti } from '../utils/confetti.ts';
 
 interface GameFinalScreenProps {
   room: RoomState;
@@ -38,6 +40,9 @@ export const GameFinalScreen: React.FC<GameFinalScreenProps> = ({
 
   useEffect(() => {
     sound.playVictory();
+    if (isWinner) {
+      triggerWinnerConfetti();
+    }
 
     // Calculate XP reward
     let xp = 60; // completion bonus
@@ -52,14 +57,33 @@ export const GameFinalScreen: React.FC<GameFinalScreenProps> = ({
     const { leveledUp: didLevelUp } = addXpToProfile(xp);
     setXpGained(xp);
     setLeveledUp(didLevelUp);
-  }, []);
+  }, [isWinner]);
+
+  const handleCelebrateMore = () => {
+    sound.playVictory();
+    triggerWinnerConfetti(true);
+  };
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-8 space-y-8">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="w-full max-w-2xl mx-auto px-4 py-8 space-y-8"
+    >
       {/* Top Victory Header */}
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
-          <Trophy className="w-4 h-4" /> Fim de Jogo!
+        <div className="flex items-center justify-center gap-2">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
+            <Trophy className="w-4 h-4" /> Fim de Jogo!
+          </div>
+          <button
+            onClick={handleCelebrateMore}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all active:scale-95 shadow-sm"
+          >
+            <PartyPopper className="w-3.5 h-3.5 text-amber-400 animate-bounce" />
+            <span>Chuva de Confetes!</span>
+          </button>
         </div>
         <h1 className="text-4xl font-black text-white font-['Outfit']">PÓDIO DA PARTIDA</h1>
         <p className="text-slate-400 text-sm">
@@ -205,6 +229,6 @@ export const GameFinalScreen: React.FC<GameFinalScreenProps> = ({
           <span>VOLTAR AO INÍCIO</span>
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 };

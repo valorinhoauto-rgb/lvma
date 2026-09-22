@@ -6,7 +6,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Check, X, ThumbsUp, ThumbsDown, Clock, ShieldCheck, HelpCircle, Sparkles } from 'lucide-react';
-import { Player, PlayerAnswer, RoomState } from '../types.ts';
+import { RoomState } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { PlayerAvatar } from './PlayerAvatar.tsx';
 

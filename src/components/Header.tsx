@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { Volume2, VolumeX, HelpCircle, BookOpen, User, Sparkles, Users } from 'lucide-react';
+import { Volume2, VolumeX, HelpCircle, BookOpen, Users } from 'lucide-react';
 import { sound } from '../utils/audio.ts';
 import { UserProfile } from '../types.ts';
 import { calculateLevel } from '../utils/profile.ts';
@@ -55,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
                 MALM
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">STOP • TERMO • JUICE</p>
+            <p className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">STOP • TERMO • FORCA • JUICE</p>
           </div>
         </button>
 

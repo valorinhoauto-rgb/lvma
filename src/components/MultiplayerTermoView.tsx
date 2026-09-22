@@ -6,11 +6,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Trophy, Users, CheckCircle2, XCircle, EyeOff, Sparkles, Timer, AlertCircle, Zap, Crown } from 'lucide-react';
+import { Trophy, Users, CheckCircle2, XCircle, EyeOff, Timer, AlertCircle, Zap, Crown } from 'lucide-react';
 import { LetterStatus, Player, PlayerAnswer, RoundConfig, TermoGuessResult } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { PlayerAvatar } from './PlayerAvatar.tsx';
 import { isValidTermoWord } from '../data/termoDictionary.ts';
+import { triggerWinnerConfetti } from '../utils/confetti.ts';
 
 interface MultiplayerTermoViewProps {
   round: RoundConfig;
@@ -57,6 +58,7 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
   useEffect(() => {
     if (isUserWinner) {
       sound.playVictory();
+      triggerWinnerConfetti();
     }
   }, [isUserWinner]);
 

@@ -2,7 +2,7 @@
  * Types and Interfaces for STOP + TERMO + JUICE
  */
 
-export type GameMode = 'stop_termo' | 'termo_multiplayer' | 'juice_photo';
+export type GameMode = 'stop_termo' | 'termo_multiplayer' | 'juice_photo' | 'forca';
 
 export type WordDifficulty = 1 | 2 | 3 | 4; // 1: Fácil, 2: Médio, 3: Difícil, 4: Especialista
 
@@ -83,6 +83,14 @@ export interface RoundConfig {
   restrictions?: RoundRestrictions;
   targetWord?: string;        // Para modo Termo
   photoChallenge?: JuicePhotoChallenge; // Para modo Foto / Juice
+  forcaChallenge?: {
+    id: string;
+    word: string;
+    normalized: string;
+    category: string;
+    hint: string;
+    difficulty?: 'facil' | 'medio' | 'dificil';
+  };
 }
 
 export type LetterStatus = 'correct' | 'present' | 'absent' | 'empty';
@@ -134,6 +142,10 @@ export interface PlayerAnswer {
   isUnique?: boolean;
   termoGuesses?: TermoGuessResult[]; // Histórico de palpites no modo termo multiplayer
   juiceGuesses?: JuiceGuessResult[]; // Histórico de palpites no modo foto juice
+  forcaGuesses?: string[];           // Letras tentadas no jogo da forca
+  forcaWrongCount?: number;          // Quantidade de erros (0 a 6)
+  forcaWon?: boolean;                // Se salvou o boneco / acertou
+  forcaRevealedCount?: number;       // Quantas letras acertou
   guessedTarget?: boolean;
 }
 
@@ -175,6 +187,7 @@ export interface RoomSettings {
   scoringStyle: 'dynamic' | 'classic_stop'; // dynamic: 100 base + speed + rarity; classic: 10 (único) / 5 (repetido)
   votingTimeSeconds: number;  // Tempo para a fase de votação (ex: 20 segundos)
   juiceTheme?: JuiceThemeId;  // Tema selecionado para o modo Juice / Foto
+  forcaCategory?: string;     // Categoria selecionada para o Jogo da Forca (ex: "Animais", "Infância & Brinquedos", "todas")
 }
 
 export type RoomStatus = 'lobby' | 'countdown' | 'round_active' | 'round_voting' | 'round_results' | 'game_over' | 'closed';

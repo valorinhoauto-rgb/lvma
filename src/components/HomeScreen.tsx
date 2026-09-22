@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { Play, PlusCircle, Users, Target, Sparkles, ShieldCheck, Flame, ArrowRight, Camera, Award } from 'lucide-react';
+import { Play, PlusCircle, Users, Target, Sparkles, ArrowRight, Camera, Award } from 'lucide-react';
 import { GameMode, UserProfile } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 
@@ -15,6 +15,7 @@ interface HomeScreenProps {
   onStartTermoMode: () => void;
   onOpenHowToPlay: () => void;
   onOpenDictionary: () => void;
+  onOpenForcaDuoModal: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -24,7 +25,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onJoinRoom,
   onStartTermoMode,
   onOpenHowToPlay,
-  onOpenDictionary
+  onOpenDictionary,
+  onOpenForcaDuoModal
 }) => {
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [joinError, setJoinError] = useState('');
@@ -135,6 +137,52 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-amber-300 transform group-hover:translate-x-1 transition-transform" />
         </button>
 
+        {/* Jogo da Forca (Nostalgia da Infância • Multiplayer & Dupla) */}
+        <div className="w-full bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-yellow-500/10 border border-amber-500/40 rounded-2xl p-4 flex flex-col justify-between gap-2.5 shadow-lg shadow-amber-950/20">
+          <div className="flex items-center gap-3 text-left">
+            <div className="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl shrink-0">
+              🪢
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-base font-black font-['Outfit'] text-amber-300 leading-tight">JOGO DA FORCA</span>
+                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-bold border border-amber-500/40">
+                  Infância
+                </span>
+              </div>
+              <div className="text-xs font-medium text-slate-300 truncate">
+                6 vidas, adivinhe letra por letra ou arrisque a palavra
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-0.5">
+            <button
+              id="btn-home-forca-multiplayer"
+              onClick={() => {
+                sound.playClick();
+                onQuickPlay('forca');
+              }}
+              className="py-2 px-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Jogar Online</span>
+            </button>
+
+            <button
+              id="btn-home-forca-duo"
+              onClick={() => {
+                sound.playClick();
+                onOpenForcaDuoModal();
+              }}
+              className="py-2 px-2 rounded-xl bg-slate-900/80 hover:bg-slate-900 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Duelo Dupla</span>
+            </button>
+          </div>
+        </div>
+
         {/* Create Private Room */}
         <button
           id="btn-home-create-room"
@@ -142,7 +190,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             sound.playClick();
             onCreateRoom();
           }}
-          className="w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold p-4 rounded-2xl flex items-center justify-between transition-all duration-200 group active:scale-[0.98]"
+          className="w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold p-4 rounded-2xl flex items-center justify-between transition-all duration-200 group active:scale-[0.98] sm:col-span-2"
         >
           <div className="flex items-center gap-3 text-left">
             <div className="w-11 h-11 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
@@ -150,7 +198,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </div>
             <div>
               <div className="text-base font-extrabold font-['Outfit'] leading-tight">CRIAR SALA CUSTOM</div>
-              <div className="text-xs font-medium text-slate-400">Escolha modos, rodadas e tempo</div>
+              <div className="text-xs font-medium text-slate-400">Escolha modos, categorias, rodadas e tempo</div>
             </div>
           </div>
           <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-white transform group-hover:translate-x-1 transition-transform" />

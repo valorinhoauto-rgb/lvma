@@ -12,6 +12,7 @@ import { Camera, Clock, CheckCircle2, HelpCircle, Send, Users, Flame, XCircle, S
 import { JuiceGuessResult, Player, RoundConfig } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { PlayerAvatar } from './PlayerAvatar.tsx';
+import { triggerWinnerConfetti } from '../utils/confetti.ts';
 
 interface JuicePhotoModeViewProps {
   round: RoundConfig;
@@ -141,6 +142,9 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
         });
 
         if (isValid) {
+          sound.playSuccess();
+          triggerWinnerConfetti();
+        } else if (isPartial) {
           sound.playSuccess();
         } else if (val.isClose) {
           sound.playTick();

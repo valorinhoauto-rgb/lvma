@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Clock, Send, Sparkles, AlertCircle, CheckCircle, Flame, ShieldAlert } from 'lucide-react';
+import { Clock, Send, Sparkles, CheckCircle, ShieldAlert } from 'lucide-react';
 import { Player, RoundConfig } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 

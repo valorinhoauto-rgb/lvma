@@ -3,9 +3,11 @@
  */
 
 import React, { useState } from 'react';
-import { Copy, Check, Users, Settings, Play, ArrowLeft, Send, Sparkles, Clock, Trophy, HelpCircle, Flame, UserX, UserPlus } from 'lucide-react';
+import { Copy, Check, Users, Settings, Play, ArrowLeft, Send, Sparkles, Clock, Trophy, Flame, UserX, UserPlus } from 'lucide-react';
 import { CATEGORIES } from '../data/words.ts';
 import { JUICE_THEMES } from '../data/juicePhotos.ts';
+import { FORCA_CATEGORY_OPTIONS } from '../data/forcaWords.ts';
+import { ForcaDuoLocalModal } from './ForcaDuoLocalModal.tsx';
 import { ChatMessage } from '../hooks/useGameSocket.ts';
 import { GameMode, Player, RoomSettings, RoomState, Friend } from '../types.ts';
 import { sound } from '../utils/audio.ts';
@@ -41,6 +43,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   const [copied, setCopied] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [showForcaDuoModal, setShowForcaDuoModal] = useState(false);
 
   const isHost = room.hostId === currentUserId;
 
@@ -59,6 +62,12 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
     sound.playClick();
     if (mode === 'termo_multiplayer') {
       onUpdateSettings({ gameMode: mode, timeLimit: 0 });
+    } else if (mode === 'forca') {
+      onUpdateSettings({
+        gameMode: mode,
+        timeLimit: 0,
+        forcaCategory: room.settings.forcaCategory || 'todas'
+      });
     } else if (mode === 'juice_photo') {
       onUpdateSettings({
         gameMode: mode,
@@ -333,7 +342,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               {/* Game Mode Selector */}
               <div>
                 <label className="text-xs text-slate-400 font-semibold block mb-1.5">Escolha o Modo de Jogo</label>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   <button
                     disabled={!isHost}
                     onClick={() => handleSelectMode('stop_termo')}
@@ -374,6 +383,20 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                     <div className="text-sm mb-0.5">📸</div>
                     <div className="font-bold">Juice / Fotos</div>
                     <div className="text-[10px] text-slate-500">Adivinhe Foto</div>
+                  </button>
+
+                  <button
+                    disabled={!isHost}
+                    onClick={() => handleSelectMode('forca')}
+                    className={`p-2 rounded-xl text-center text-xs border transition-all ${
+                      room.settings.gameMode === 'forca'
+                        ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold shadow-sm shadow-amber-950'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <div className="text-sm mb-0.5">🪢</div>
+                    <div className="font-bold">FORCA</div>
+                    <div className="text-[10px] text-slate-500">Infância & Dupla</div>
                   </button>
                 </div>
               </div>
@@ -764,6 +787,98 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* ============================================================== */}
+              {/* MODE 4: JOGO DA FORCA SETTINGS */}
+              {/* ============================================================== */}
+              {room.settings.gameMode === 'forca' && (
+                <div className="space-y-4 pt-1">
+                  {/* How it works banner */}
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200/90 leading-relaxed space-y-1">
+                    <div className="font-bold text-amber-300 flex items-center gap-1.5">
+                      <span>🪢</span>
+                      <span>Como funciona o Jogo da Forca</span>
+                    </div>
+                    <p className="text-[11px] text-amber-200/80">
+                      O clássico da infância adaptado para multiplayer! Todos disputam a mesma palavra misteriosa. Cada jogador tem <strong>6 vidas</strong>. Adivinhe letra por letra ou arrisque o chute da palavra inteira para vencer a rodada!
+                    </p>
+                  </div>
+
+                  {/* Secret Words Count */}
+                  <div>
+                    <label className="text-xs text-slate-400 font-semibold block mb-1.5">Quantidade de Palavras / Rodadas</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[3, 5, 7, 10].map((num) => (
+                        <button
+                          key={num}
+                          disabled={!isHost}
+                          onClick={() => {
+                            sound.playClick();
+                            onUpdateSettings({ totalRounds: num });
+                          }}
+                          className={`py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                            room.settings.totalRounds === num
+                              ? 'bg-amber-500 text-slate-950 border-amber-500 font-black'
+                              : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+                          }`}
+                        >
+                          {num} {num === 1 ? 'Palavra' : 'Palavras'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Forca Categories */}
+                  <div className="space-y-2">
+                    <label className="text-xs text-slate-400 font-semibold">Tema das Palavras da Forca</label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {FORCA_CATEGORY_OPTIONS.map((cat) => {
+                        const isSelected = (room.settings.forcaCategory || 'todas') === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            disabled={!isHost}
+                            onClick={() => {
+                              sound.playClick();
+                              onUpdateSettings({ forcaCategory: cat.id });
+                            }}
+                            className={`p-2 rounded-xl text-left border transition-all text-xs flex items-center gap-2 ${
+                              isSelected
+                                ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
+                                : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'
+                            }`}
+                          >
+                            <span className="text-base">{cat.emoji}</span>
+                            <span className="truncate">{cat.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Local Duo Pass & Play CTA */}
+                  <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Quer jogar em Dupla no mesmo aparelho?</span>
+                      </div>
+                      <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-bold">1v1 Local</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Um jogador digita a palavra secreta e a dica em segredo, e o outro jogador tenta adivinhar na Forca!
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowForcaDuoModal(true)}
+                      className="w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-xs rounded-lg border border-amber-500/40 flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Abrir Duelo em Dupla (2 Jogadores)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -821,6 +936,14 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
           </div>
         </div>
       </div>
+
+      {showForcaDuoModal && (
+        <ForcaDuoLocalModal
+          onClose={() => setShowForcaDuoModal(false)}
+          player1Name={room.players[0]?.name || 'Jogador 1'}
+          player2Name={room.players[1]?.name || 'Jogador 2'}
+        />
+      )}
     </div>
   );
 };

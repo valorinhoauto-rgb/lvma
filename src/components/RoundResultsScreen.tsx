@@ -3,11 +3,13 @@
  * Apresenta o resultado da rodada, respostas reveladas, pontuação e palavras válidas do dicionário.
  */
 
-import React from 'react';
-import { Check, X, Sparkles, Zap, ArrowRight, BookOpen, Crown, Trophy } from 'lucide-react';
-import { Player, PlayerAnswer, RoundConfig, RoomState } from '../types.ts';
+import React, { useEffect } from 'react';
+import { Check, X, Sparkles, Zap, ArrowRight, BookOpen, Trophy, PartyPopper } from 'lucide-react';
+import { motion } from 'motion/react';
+import { PlayerAnswer, RoomState } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { PlayerAvatar } from './PlayerAvatar.tsx';
+import { triggerWinnerConfetti } from '../utils/confetti.ts';
 
 interface RoundResultsScreenProps {
   room: RoomState;
@@ -24,18 +26,44 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
   const isHost = room.hostId === currentUserId;
   const myAnswer: PlayerAnswer | undefined = room.roundAnswers[currentUserId];
 
+  useEffect(() => {
+    if (myAnswer?.isValid) {
+      triggerWinnerConfetti();
+    }
+  }, [myAnswer?.isValid]);
+
   if (!round) return null;
 
   const isLastRound = room.currentRoundIndex >= room.settings.totalRounds;
 
+  const handleManualCelebration = () => {
+    sound.playVictory();
+    triggerWinnerConfetti(true);
+  };
+
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-6 space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      className="w-full max-w-2xl mx-auto px-4 py-6 space-y-6"
+    >
       {/* Top Banner */}
       <div className="text-center space-y-2">
-        <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30">
-          Rodada {round.roundNumber} Concluída
-        </span>
-        <h2 className="text-3xl font-black text-white font-['Outfit']">RODADA ENCERRADA</h2>
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30">
+            Rodada {round.roundNumber} Concluída
+          </span>
+          <button
+            onClick={handleManualCelebration}
+            title="Soltar confetes!"
+            className="text-xs font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 px-2.5 py-1 rounded-full flex items-center gap-1 transition-all active:scale-95 shadow-sm"
+          >
+            <PartyPopper className="w-3.5 h-3.5 text-amber-400 animate-bounce" />
+            <span>Celebrar!</span>
+          </button>
+        </div>
+        <h2 className="text-3xl font-black text-white font-['Outfit'] tracking-tight">RODADA ENCERRADA</h2>
         <div className="text-sm font-extrabold text-slate-300 flex items-center justify-center gap-2">
           <span className="text-emerald-400 font-mono text-base">{round.letter.toUpperCase()}</span>
           <span>•</span>
@@ -81,8 +109,25 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
         </div>
       )}
 
+      {/* Forca Challenge Reveal */}
+      {round.forcaChallenge && (
+        <div className="bg-slate-900 border border-amber-500/40 rounded-2xl p-4 shadow-xl text-center space-y-1">
+          <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
+            <span>Palavra Secreta da Forca • {round.forcaChallenge.category}</span>
+          </div>
+          <div className="text-2xl font-black text-white font-mono tracking-widest uppercase">
+            {round.forcaChallenge.word}
+          </div>
+          {round.forcaChallenge.hint && (
+            <div className="text-xs text-slate-400">
+              Dica: {round.forcaChallenge.hint}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Secret Word Reveal (Termo Mode) */}
-      {round.targetWord && !round.photoChallenge && (
+      {round.targetWord && !round.photoChallenge && !round.forcaChallenge && (
         <div className="bg-slate-900 border border-emerald-500/40 rounded-2xl p-4 shadow-xl text-center space-y-1">
           <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
             Palavra Secreta do Termo
@@ -97,12 +142,43 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
       {myAnswer ? (
         <div
           className={`p-5 rounded-2xl border text-center space-y-2 shadow-xl ${
-            myAnswer.isValid
+            myAnswer.isValid || myAnswer.forcaWon
               ? 'bg-emerald-950/40 border-emerald-500/50 text-white shadow-emerald-500/10'
               : 'bg-rose-950/40 border-rose-500/50 text-white shadow-rose-500/10'
           }`}
         >
-          {room.settings.gameMode === 'termo_multiplayer' ? (
+          {room.settings.gameMode === 'forca' ? (
+            <div className="space-y-1.5">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Resultado no Jogo da Forca
+              </div>
+              {myAnswer.forcaWon || myAnswer.isValid ? (
+                <>
+                  <div className="text-xl sm:text-2xl font-black text-emerald-300 flex items-center justify-center gap-2">
+                    <Trophy className="w-6 h-6 text-amber-400" />
+                    <span>VOCÊ SALVOU O BONECO! 🎉</span>
+                  </div>
+                  <div className="text-3xl font-black text-emerald-400 font-mono">
+                    +{myAnswer.points} pts
+                  </div>
+                  <div className="text-xs text-slate-300">
+                    {myAnswer.forcaWrongCount === 0
+                      ? 'Incrível! Nenhum erro cometido!'
+                      : `Apenas ${myAnswer.forcaWrongCount} erro(s) na rodada!`}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xl font-bold text-rose-300 flex items-center justify-center gap-1.5">
+                    <span>💀 Boneco Enforcado! (0 pts)</span>
+                  </div>
+                  <div className="text-xs text-rose-300/90 font-medium">
+                    {myAnswer.validationReason || 'O boneco foi enforcado após 6 erros.'}
+                  </div>
+                </>
+              )}
+            </div>
+          ) : room.settings.gameMode === 'termo_multiplayer' ? (
             <div className="space-y-1.5">
               <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Resultado no Termo Coletivo
@@ -209,7 +285,20 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
 
                     {answer ? (
                       <div className="text-xs font-mono flex items-center gap-1 mt-0.5 flex-wrap">
-                        {room.settings.gameMode === 'termo_multiplayer' ? (
+                        {room.settings.gameMode === 'forca' ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={answer.isValid || answer.forcaWon ? 'text-emerald-300 font-bold' : 'text-slate-400'}>
+                              {answer.isValid || answer.forcaWon
+                                ? `Salvou o boneco (${answer.forcaWrongCount || 0} erros)`
+                                : `Enforcado (${answer.forcaWrongCount || 6}/6 erros)`}
+                            </span>
+                            {answer.isValid && (
+                              <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-black border border-amber-500/30">
+                                🏆 VENCEDOR
+                              </span>
+                            )}
+                          </div>
+                        ) : room.settings.gameMode === 'termo_multiplayer' ? (
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={answer.isValid ? 'text-emerald-300 font-bold' : 'text-slate-400'}>
                               {answer.isValid
@@ -308,6 +397,6 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };

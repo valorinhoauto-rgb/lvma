@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { X, Search, PlusCircle, Database, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { X, PlusCircle, Database, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { CATEGORIES } from '../data/words.ts';
 import { sound } from '../utils/audio.ts';
 
@@ -21,8 +21,6 @@ export const WordExplorerModal: React.FC<WordExplorerModalProps> = ({
 }) => {
   const [tab, setTab] = useState<'explorer' | 'suggest'>('explorer');
   const [selectedCat, setSelectedCat] = useState<string>('animal');
-  const [searchLetter, setSearchLetter] = useState<string>('');
-  const [searchLength, setSearchLength] = useState<number | ''>('');
   const [combinations, setCombinations] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
 

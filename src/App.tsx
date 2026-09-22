@@ -16,6 +16,8 @@ import { RoundScreen } from './components/RoundScreen.tsx';
 import { RoundVotingScreen } from './components/RoundVotingScreen.tsx';
 import { JuicePhotoModeView } from './components/JuicePhotoModeView.tsx';
 import { MultiplayerTermoView } from './components/MultiplayerTermoView.tsx';
+import { ForcaModeView } from './components/ForcaModeView.tsx';
+import { ForcaDuoLocalModal } from './components/ForcaDuoLocalModal.tsx';
 import { RoundResultsScreen } from './components/RoundResultsScreen.tsx';
 import { GameFinalScreen } from './components/GameFinalScreen.tsx';
 import { TermoModeView } from './components/TermoModeView.tsx';
@@ -38,6 +40,7 @@ export default function App() {
   const [showDictionary, setShowDictionary] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
   const [showNicknameSetup, setShowNicknameSetup] = useState(false);
+  const [showForcaDuoModal, setShowForcaDuoModal] = useState(false);
   const [termoModeActive, setTermoModeActive] = useState(false);
   const [joinAlert, setJoinAlert] = useState<string | null>(null);
   const [friends, setFriends] = useState<Friend[]>(() => {
@@ -52,7 +55,6 @@ export default function App() {
 
   const {
     room,
-    connected,
     chatMessages,
     lastValidationResult,
     hostLeftMessage,
@@ -200,10 +202,20 @@ export default function App() {
   // Quick Play handler: creates a room with chosen mode and enters lobby
   const handleQuickPlay = async (mode: GameMode = 'stop_termo') => {
     sound.playClick();
+    if (mode === 'forca') {
+      await createRoom({
+        gameMode: mode,
+        totalRounds: 3,
+        timeLimit: 0,
+        forcaCategory: 'todas',
+        scoringStyle: 'dynamic'
+      });
+      return;
+    }
     await createRoom({
       gameMode: mode,
       totalRounds: 3,
-      timeLimit: 30,
+      timeLimit: mode === 'termo_multiplayer' ? 0 : 30,
       scoringStyle: 'dynamic',
       juiceTheme: 'brasil_geral'
     });
@@ -212,7 +224,11 @@ export default function App() {
   // Create room with custom mode
   const handleCreateRoom = async (mode: GameMode = 'stop_termo') => {
     sound.playClick();
-    await createRoom({ gameMode: mode, juiceTheme: 'brasil_geral' });
+    await createRoom({
+      gameMode: mode,
+      juiceTheme: 'brasil_geral',
+      forcaCategory: 'todas'
+    });
   };
 
   // Join Room with validation
@@ -246,6 +262,7 @@ export default function App() {
           onStartTermoMode={() => setTermoModeActive(true)}
           onOpenHowToPlay={() => setShowHowToPlay(true)}
           onOpenDictionary={() => setShowDictionary(true)}
+          onOpenForcaDuoModal={() => setShowForcaDuoModal(true)}
         />
       );
     }
@@ -300,6 +317,20 @@ export default function App() {
               currentUserId={userProfile.id}
               hasAnswered={Boolean(myPlayer?.hasAnswered)}
               guesses={room.roundAnswers[userProfile.id]?.termoGuesses || []}
+              roundAnswers={room.roundAnswers}
+              onSubmitGuess={submitAnswer}
+            />
+          );
+        }
+
+        // Jogo da Forca Mode (Nostalgia da Infância)
+        if (room.settings.gameMode === 'forca') {
+          return (
+            <ForcaModeView
+              round={room.currentRound}
+              players={room.players}
+              currentUserId={userProfile.id}
+              hasAnswered={Boolean(myPlayer?.hasAnswered)}
               roundAnswers={room.roundAnswers}
               onSubmitGuess={submitAnswer}
             />
@@ -439,6 +470,14 @@ export default function App() {
         onClose={() => setShowDictionary(false)}
         playerName={userProfile.name}
       />
+
+      {showForcaDuoModal && (
+        <ForcaDuoLocalModal
+          onClose={() => setShowForcaDuoModal(false)}
+          player1Name={userProfile.name || 'Jogador 1'}
+          player2Name="Jogador 2"
+        />
+      )}
     </div>
   );
 }

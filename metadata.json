@@ -1,6 +1,6 @@
 {
   "name": "MALM",
-  "description": "MALM - Jogo multiplayer de palavras, STOP + TERMO híbrido com votação da galera e desafio fotográfico Modo Juice.",
+  "description": "MALM - Jogo multiplayer de palavras, STOP + TERMO híbrido com votação da galera, Jogo da Forca nostálgico em duplas e desafio fotográfico Modo Juice.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

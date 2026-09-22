@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Users, UserPlus, Search, Copy, Check, Trash2, Send, X, Sparkles, ShieldCheck, AlertCircle, Loader2, LogIn, Lock } from 'lucide-react';
-import { Friend, UserProfile, Player } from '../types.ts';
+import { Users, UserPlus, Search, Copy, Check, Trash2, Send, X, ShieldCheck, AlertCircle, Loader2, LogIn, Lock } from 'lucide-react';
+import { Friend, UserProfile } from '../types.ts';
 import { PlayerAvatar } from './PlayerAvatar.tsx';
 import { sound } from '../utils/audio.ts';
 import { findUserByNickname, auth, loginWithGoogle } from '../lib/firebase.ts';

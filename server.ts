@@ -9,7 +9,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { WebSocketServer, WebSocket } from 'ws';
 import { gameManager } from './src/server/gameManager.ts';
-import { wordEngine, userSuggestions, isValidTermoWord } from './src/server/wordEngine.ts';
+import { wordEngine, isValidTermoWord } from './src/server/wordEngine.ts';
 import { CATEGORIES } from './src/data/words.ts';
 import { Player } from './src/types.ts';
 

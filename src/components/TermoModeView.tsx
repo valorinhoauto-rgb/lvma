@@ -4,11 +4,12 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, RotateCcw, Target, Sparkles, CheckCircle2, HelpCircle } from 'lucide-react';
-import { LetterStatus, TermoGuessResult, WordEntry } from '../types.ts';
+import { ArrowLeft, RotateCcw, Target, PartyPopper } from 'lucide-react';
+import { LetterStatus, TermoGuessResult } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { addXpToProfile, unlockAchievement } from '../utils/profile.ts';
 import { getAlternatingTermoLength, getRandomTermoTarget, isValidTermoWord } from '../data/termoDictionary.ts';
+import { triggerWinnerConfetti } from '../utils/confetti.ts';
 
 interface TermoModeViewProps {
   onBack: () => void;
@@ -125,6 +126,7 @@ export const TermoModeView: React.FC<TermoModeViewProps> = ({ onBack }) => {
       if (evalResult.isCorrect) {
         setGameStatus('won');
         sound.playVictory();
+        triggerWinnerConfetti();
         addXpToProfile(120);
         if (nextGuesses.length <= 4) {
           unlockAchievement('termo_master');
@@ -240,9 +242,9 @@ export const TermoModeView: React.FC<TermoModeViewProps> = ({ onBack }) => {
       {/* Won / Lost Card */}
       {gameStatus !== 'playing' && (
         <div
-          className={`p-5 rounded-2xl border text-center space-y-3 shadow-2xl ${
+          className={`p-5 rounded-2xl border text-center space-y-3 shadow-2xl animate-fade-in ${
             gameStatus === 'won'
-              ? 'bg-emerald-950/40 border-emerald-500/60 text-white'
+              ? 'bg-gradient-to-b from-emerald-950/60 to-slate-900 border-emerald-500/60 text-white shadow-emerald-500/10'
               : 'bg-rose-950/40 border-rose-500/60 text-white'
           }`}
         >
@@ -250,14 +252,28 @@ export const TermoModeView: React.FC<TermoModeViewProps> = ({ onBack }) => {
             {gameStatus === 'won' ? '🎉 Parabéns! Você acertou!' : '💔 Fim das Tentativas!'}
           </div>
           <p className="text-sm">
-            A palavra secreta era: <strong className="font-mono text-amber-300 text-lg">{targetWord}</strong>
+            A palavra secreta era: <strong className="font-mono text-amber-300 text-lg uppercase tracking-wider">{targetWord}</strong>
           </p>
-          <button
-            onClick={initNewGame}
-            className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-sm transition-all"
-          >
-            Jogar Outra Palavra
-          </button>
+          <div className="flex items-center justify-center gap-3 pt-1">
+            {gameStatus === 'won' && (
+              <button
+                onClick={() => {
+                  sound.playVictory();
+                  triggerWinnerConfetti();
+                }}
+                className="px-4 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold rounded-xl text-sm transition-all flex items-center gap-1.5 active:scale-95"
+              >
+                <PartyPopper className="w-4 h-4 text-amber-400" />
+                <span>Soltar Confetes</span>
+              </button>
+            )}
+            <button
+              onClick={initNewGame}
+              className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+            >
+              Jogar Outra Palavra
+            </button>
+          </div>
         </div>
       )}
 

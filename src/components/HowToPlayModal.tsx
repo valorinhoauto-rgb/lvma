@@ -108,6 +108,32 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({ isOpen, onClose 
               </div>
             </div>
           </div>
+
+          {/* Jogo da Forca */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-indigo-400" />
+              4. Jogo da Forca (Nostalgia da Infância)
+            </h3>
+            <p>
+              Adivinhe a palavra secreta nostálgica antes de esgotar as <strong>6 vidas</strong> do boneco palito:
+            </p>
+            <ul className="space-y-1 list-disc list-inside text-slate-300">
+              <li><strong className="text-white">Multiplayer:</strong> Todos tentam desvendar a palavra simultaneamente.</li>
+              <li><strong className="text-indigo-300">Duelo em Dupla:</strong> No mesmo celular/PC, um amigo escreve o segredo e o outro tenta adivinhar.</li>
+            </ul>
+          </div>
+
+          {/* Modo Juice */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-pink-400" />
+              5. Modo Juice (Desafio Fotográfico)
+            </h3>
+            <p>
+              Uma foto real com efeito pixelado ou foco vai sendo revelada aos poucos. Digite o nome da celebridade, lugar, comida ou monumento o mais rápido possível para pontuar!
+            </p>
+          </div>
         </div>
 
         {/* Footer */}

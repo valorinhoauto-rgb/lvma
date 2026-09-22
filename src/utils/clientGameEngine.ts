@@ -8,6 +8,7 @@ import { doc, onSnapshot, setDoc, getDoc, runTransaction, updateDoc, Unsubscribe
 import { db } from '../lib/firebase.ts';
 import { CATEGORIES } from '../data/words.ts';
 import { getRandomJuicePhoto, validateJuiceGuessDetailed } from '../data/juicePhotos.ts';
+import { getRandomForcaChallenge, normalizeForcaString, ForcaChallenge } from '../data/forcaWords.ts';
 import { wordEngine } from '../server/wordEngine.ts';
 import { isValidTermoWord, getRandomTermoTarget, getAlternatingTermoLength } from '../data/termoDictionary.ts';
 import {
@@ -32,6 +33,7 @@ class ClientGameEngine {
   private possibleCurrentWords: WordEntry[] = [];
   private usedCombinations: Set<string> = new Set();
   private usedPhotoIds: Set<string> = new Set();
+  private usedForcaIds: Set<string> = new Set();
   private isHost: boolean = false;
   private myPlayerId: string | null = null;
   private isAdvancingRound: boolean = false;
@@ -395,6 +397,29 @@ class ClientGameEngine {
         endsAt: 0,
         targetWord: chosenWordNorm
       };
+    } else if (gameMode === 'forca') {
+      // Modo JOGO DA FORCA (Infância & Clássico)
+      const challenge = getRandomForcaChallenge(
+        Array.from(this.usedForcaIds),
+        this.activeRoom.settings.forcaCategory || 'todas'
+      );
+      this.usedForcaIds.add(challenge.id);
+
+      const now = Date.now();
+      round = {
+        roundNumber,
+        totalRounds: this.activeRoom.settings.totalRounds,
+        letter: challenge.normalized[0] || '?',
+        categoryId: 'forca',
+        categoryName: challenge.category,
+        wordLength: challenge.normalized.length,
+        timeLimit: 0, // Sem limite de tempo estrito, para curtir a dedução!
+        startedAt: now,
+        endsAt: 0,
+        targetWord: challenge.normalized,
+        forcaChallenge: challenge
+      };
+      this.possibleCurrentWords = [];
     } else {
       const comb = wordEngine.getRandomCombination({
         minLength,
@@ -437,8 +462,8 @@ class ClientGameEngine {
     this.notify('room:update', { room: this.activeRoom });
     this.syncToFirestore(this.activeRoom);
 
-    // Round timer (exceto no modo termo_multiplayer, que não tem limite de tempo)
-    if (this.activeRoom.settings.gameMode !== 'termo_multiplayer') {
+    // Round timer (exceto no modo termo_multiplayer ou forca com tempo livre)
+    if (this.activeRoom.settings.gameMode !== 'termo_multiplayer' && this.activeRoom.settings.gameMode !== 'forca' && round.timeLimit > 0) {
       const durationMs = (round.timeLimit * 1000) + 500;
       this.timerHandle = setTimeout(() => {
         this.handleRoundTimeUp();
@@ -687,6 +712,166 @@ class ClientGameEngine {
       };
     }
 
+    // Modo JOGO DA FORCA (Multiplayer e Dupla)
+    if (this.activeRoom.settings.gameMode === 'forca') {
+      const challenge = round.forcaChallenge;
+      const targetNormalized = challenge?.normalized || round.targetWord || '';
+      const cleanInput = normalizeForcaString(rawAnswer);
+      if (!cleanInput) return null;
+
+      const existingRecord = this.activeRoom.roundAnswers[playerId];
+      const previousGuesses: string[] = existingRecord?.forcaGuesses || [];
+      let wrongCount = existingRecord?.forcaWrongCount || 0;
+      let isWon = existingRecord?.forcaWon || false;
+
+      if (isWon || wrongCount >= 6) {
+        return {
+          room: this.activeRoom,
+          validation: {
+            isValid: isWon,
+            message: isWon ? 'Você já desvendou a palavra!' : 'Você já foi enforcado nesta rodada!'
+          }
+        };
+      }
+
+      let newGuesses = [...previousGuesses];
+      let hit = false;
+      let message = '';
+
+      if (cleanInput.length === 1) {
+        // Palpite de letra individual
+        if (previousGuesses.includes(cleanInput)) {
+          return {
+            room: this.activeRoom,
+            validation: {
+              isValid: false,
+              message: `A letra "${cleanInput}" já foi tentada!`
+            }
+          };
+        }
+        newGuesses.push(cleanInput);
+        hit = targetNormalized.includes(cleanInput);
+        if (!hit) {
+          wrongCount = Math.min(6, wrongCount + 1);
+          message = `A palavra não tem "${cleanInput}"! (${6 - wrongCount} vidas restantes)`;
+        } else {
+          message = `Boa! A palavra contém a letra "${cleanInput}"!`;
+        }
+
+        // Verificar se completou todas as letras
+        const distinctLetters = Array.from(new Set(targetNormalized.split('')));
+        const allRevealed = distinctLetters.every(l => newGuesses.includes(l));
+        if (allRevealed) {
+          isWon = true;
+        }
+      } else {
+        // Tentativa de chutar a palavra completa
+        if (cleanInput === targetNormalized) {
+          isWon = true;
+          hit = true;
+          message = `🎉 Sensacional! Você acertou a palavra inteira: ${challenge?.word || targetNormalized}!`;
+        } else {
+          wrongCount = Math.min(6, wrongCount + 2); // Chute errado de palavra custa 2 vidas!
+          message = `Ops! "${rawAnswer}" não é a palavra correta! Perdeu 2 vidas! (${6 - wrongCount} restantes)`;
+        }
+      }
+
+      const isHanged = wrongCount >= 6;
+      const isFinished = isWon || isHanged;
+
+      // Verificar se já existe um primeiro vencedor nesta rodada
+      const existingWinner = Object.values(this.activeRoom.roundAnswers).find(a => a.isValid && a.playerId !== playerId);
+      const isFirstWinner = isWon && !existingWinner;
+
+      // Pontuação da Forca: 100 base - (erros * 12). Vencedor ganha pontos cheios!
+      const wonPoints = isFirstWinner
+        ? Math.max(30, 100 - (wrongCount * 12))
+        : (isWon ? Math.max(15, 60 - (wrongCount * 10)) : 0);
+
+      const answerRecord: PlayerAnswer = {
+        playerId,
+        playerName: player.name,
+        rawAnswer: isWon ? (challenge?.word || targetNormalized) : (existingRecord?.rawAnswer || cleanInput),
+        normalizedAnswer: isWon ? targetNormalized : (existingRecord?.normalizedAnswer || cleanInput),
+        isValid: isFirstWinner,
+        inDictionary: true,
+        isCommunityApproved: isFirstWinner,
+        votes: { yes: 0, no: 0, voterIds: {} },
+        responseTimeMs,
+        points: wonPoints,
+        validationReason: isFirstWinner
+          ? `Salvou o boneco da Forca e venceu a rodada (+${wonPoints} pts)!`
+          : (isWon ? 'Completou a palavra secreta!' : (isHanged ? 'O boneco foi enforcado!' : message)),
+        forcaGuesses: newGuesses,
+        forcaWrongCount: wrongCount,
+        forcaWon: isWon,
+        forcaRevealedCount: newGuesses.filter(l => targetNormalized.includes(l)).length,
+        guessedTarget: isFirstWinner
+      };
+
+      this.activeRoom.roundAnswers[playerId] = answerRecord;
+
+      if (isFinished) {
+        player.hasAnswered = true;
+        player.currentAnswer = isWon ? (challenge?.word || targetNormalized) : 'Enforcado';
+        player.roundScore = wonPoints;
+      }
+
+      this.notify('forca:guess_result', {
+        playerId,
+        playerName: player.name,
+        guess: cleanInput,
+        hit,
+        wrongCount,
+        isWon,
+        isHanged,
+        hasWonRound: isFirstWinner
+      });
+
+      this.notify('room:update', { room: this.activeRoom });
+      this.submitAnswerToFirestore(this.activeRoom.roomId, playerId, answerRecord, {
+        hasAnswered: player.hasAnswered,
+        currentAnswer: player.currentAnswer,
+        roundScore: player.roundScore
+      });
+
+      if (this.isHost) {
+        if (isFirstWinner) {
+          this.clearTimers();
+          this.isAdvancingRound = true;
+          this.timerHandle = setTimeout(() => {
+            this.handleRoundTimeUp();
+            this.isAdvancingRound = false;
+          }, 1400);
+        } else {
+          const allFinished = this.activeRoom.players.every(p => {
+            const ans = this.activeRoom!.roundAnswers[p.id];
+            return p.hasAnswered || (ans && (ans.forcaWon || (ans.forcaWrongCount || 0) >= 6));
+          });
+          if (allFinished && !this.isAdvancingRound) {
+            this.isAdvancingRound = true;
+            this.clearTimers();
+            this.timerHandle = setTimeout(() => {
+              this.handleRoundTimeUp();
+              this.isAdvancingRound = false;
+            }, 1000);
+          }
+        }
+      }
+
+      return {
+        room: this.activeRoom,
+        validation: {
+          isValid: isWon,
+          hit,
+          wrongCount,
+          isWon,
+          isHanged,
+          message
+        }
+      };
+    }
+
     // Modo STOP + TERMO Clássico
     const validation = wordEngine.validateAnswer(rawAnswer, round);
     const answerRecord: PlayerAnswer = {
@@ -844,7 +1029,7 @@ class ClientGameEngine {
 
     for (const ans of answers) {
       let pts = 0;
-      if (this.activeRoom.settings.gameMode === 'termo_multiplayer') {
+      if (this.activeRoom.settings.gameMode === 'termo_multiplayer' || this.activeRoom.settings.gameMode === 'forca') {
         pts = ans.isValid ? ans.points : 0;
       } else if (this.activeRoom.settings.gameMode === 'juice_photo') {
         pts = ans.points;
