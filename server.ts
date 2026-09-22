@@ -9,7 +9,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { WebSocketServer, WebSocket } from 'ws';
 import { gameManager } from './src/server/gameManager.ts';
-import { wordEngine, userSuggestions } from './src/server/wordEngine.ts';
+import { wordEngine, userSuggestions, isValidTermoWord } from './src/server/wordEngine.ts';
 import { CATEGORIES } from './src/data/words.ts';
 import { Player } from './src/types.ts';
 
@@ -130,14 +130,28 @@ async function startServer() {
     res.json({ success: true, id, message: 'Sugestão enviada com sucesso!' });
   });
 
-  // Evaluate Termo Guess
+  // Evaluate Termo Guess (apenas aceita palavras que realmente existam)
   app.post('/api/termo/evaluate', (req, res) => {
     const { guess, target } = req.body;
     if (!guess || !target) {
       return res.status(400).json({ error: 'Palpite e palavra-alvo são necessários.' });
     }
-    const result = wordEngine.evaluateTermoGuess(guess, target);
+    const cleanGuess = String(guess).trim().toUpperCase();
+    if (!isValidTermoWord(cleanGuess)) {
+      return res.status(400).json({
+        error: 'Palavra não encontrada no dicionário de Português.',
+        inDictionary: false
+      });
+    }
+    const result = wordEngine.evaluateTermoGuess(cleanGuess, target);
     res.json(result);
+  });
+
+  // Checagem rápida se uma palavra é válida no vocabulário de TERMO
+  app.get('/api/termo/validate-word', (req, res) => {
+    const word = String(req.query.word || '');
+    const valid = isValidTermoWord(word);
+    res.json({ word, isValid: valid });
   });
 
   // Image proxy for authentic Wikimedia / public domain pictures

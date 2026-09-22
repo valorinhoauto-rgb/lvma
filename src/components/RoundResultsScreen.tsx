@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Check, X, Sparkles, Zap, ArrowRight, BookOpen, Crown } from 'lucide-react';
+import { Check, X, Sparkles, Zap, ArrowRight, BookOpen, Crown, Trophy } from 'lucide-react';
 import { Player, PlayerAnswer, RoundConfig, RoomState } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { PlayerAvatar } from './PlayerAvatar.tsx';
@@ -102,39 +102,72 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
               : 'bg-rose-950/40 border-rose-500/50 text-white shadow-rose-500/10'
           }`}
         >
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Sua Resposta</div>
-          <div className="text-2xl font-black font-mono tracking-wider">
-            {myAnswer.rawAnswer.toUpperCase()}{' '}
-            {myAnswer.isValid ? (
-              <span className="text-emerald-400 inline-block">✅</span>
-            ) : (
-              <span className="text-rose-400 inline-block">❌</span>
-            )}
-          </div>
-
-          {myAnswer.isValid ? (
-            <div className="space-y-1">
-              <div className="text-2xl font-black text-emerald-300">+{myAnswer.points} pontos</div>
-              {myAnswer.breakdown && (
-                <div className="flex items-center justify-center gap-3 text-xs text-slate-300 font-medium">
-                  <span>Base: {myAnswer.breakdown.base}</span>
-                  {myAnswer.breakdown.speedBonus > 0 && (
-                    <span className="text-teal-300 flex items-center gap-0.5">
-                      <Zap className="w-3 h-3" /> +{myAnswer.breakdown.speedBonus} vel.
-                    </span>
-                  )}
-                  {myAnswer.breakdown.rarityBonus > 0 && (
-                    <span className="text-amber-300 flex items-center gap-0.5">
-                      <Sparkles className="w-3 h-3" /> +{myAnswer.breakdown.rarityBonus} raridade única!
-                    </span>
-                  )}
-                </div>
+          {room.settings.gameMode === 'termo_multiplayer' ? (
+            <div className="space-y-1.5">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Resultado no Termo Coletivo
+              </div>
+              {myAnswer.isValid ? (
+                <>
+                  <div className="text-xl sm:text-2xl font-black text-emerald-300 flex items-center justify-center gap-2">
+                    <Trophy className="w-6 h-6 text-amber-400" />
+                    <span>VOCÊ VENCEU A RODADA!</span>
+                  </div>
+                  <div className="text-3xl font-black text-emerald-400 font-mono">
+                    +{myAnswer.points} pts
+                  </div>
+                  <div className="text-xs text-slate-300">
+                    {myAnswer.validationReason || `Acertou em ${myAnswer.termoGuesses?.length || 1} tentativa(s)!`}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xl font-bold text-rose-300 flex items-center justify-center gap-1.5">
+                    <span>Sem pontos nesta rodada</span>
+                  </div>
+                  <div className="text-xs text-rose-300/90 font-medium">
+                    {myAnswer.validationReason || 'Apenas o primeiro jogador a acertar a palavra vence e pontua na rodada.'}
+                  </div>
+                </>
               )}
             </div>
           ) : (
-            <div className="text-xs text-rose-300 font-medium">
-              {myAnswer.validationReason || 'Resposta não aceita.'}
-            </div>
+            <>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Sua Resposta</div>
+              <div className="text-2xl font-black font-mono tracking-wider">
+                {myAnswer.rawAnswer.toUpperCase()}{' '}
+                {myAnswer.isValid ? (
+                  <span className="text-emerald-400 inline-block">✅</span>
+                ) : (
+                  <span className="text-rose-400 inline-block">❌</span>
+                )}
+              </div>
+
+              {myAnswer.isValid ? (
+                <div className="space-y-1">
+                  <div className="text-2xl font-black text-emerald-300">+{myAnswer.points} pontos</div>
+                  {myAnswer.breakdown && (
+                    <div className="flex items-center justify-center gap-3 text-xs text-slate-300 font-medium">
+                      <span>Base: {myAnswer.breakdown.base}</span>
+                      {myAnswer.breakdown.speedBonus > 0 && (
+                        <span className="text-teal-300 flex items-center gap-0.5">
+                          <Zap className="w-3 h-3" /> +{myAnswer.breakdown.speedBonus} vel.
+                        </span>
+                      )}
+                      {myAnswer.breakdown.rarityBonus > 0 && (
+                        <span className="text-amber-300 flex items-center gap-0.5">
+                          <Sparkles className="w-3 h-3" /> +{myAnswer.breakdown.rarityBonus} raridade única!
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-xs text-rose-300 font-medium">
+                  {myAnswer.validationReason || 'Resposta não aceita.'}
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : (
@@ -146,7 +179,7 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
       {/* Answers Table for all players */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div className="px-4 py-3 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
-          <span>Jogador & Resposta</span>
+          <span>Jogador & Desempenho</span>
           <span>Pontos</span>
         </div>
 
@@ -176,23 +209,44 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
 
                     {answer ? (
                       <div className="text-xs font-mono flex items-center gap-1 mt-0.5 flex-wrap">
-                        <span className={answer.isValid ? 'text-emerald-300 font-bold' : 'text-rose-400 line-through'}>
-                          {answer.rawAnswer.toUpperCase()}
-                        </span>
-                        {answer.isValid ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-400 inline shrink-0" />
+                        {room.settings.gameMode === 'termo_multiplayer' ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={answer.isValid ? 'text-emerald-300 font-bold' : 'text-slate-400'}>
+                              {answer.isValid
+                                ? `Venceu na ${answer.termoGuesses?.length || 1}ª tentativa`
+                                : `${answer.termoGuesses?.length || 0}/5 tentativas`}
+                            </span>
+                            {answer.isValid ? (
+                              <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-black border border-amber-500/30">
+                                🏆 VENCEDOR DA RODADA
+                              </span>
+                            ) : (
+                              <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">
+                                0 pts
+                              </span>
+                            )}
+                          </div>
                         ) : (
-                          <X className="w-3.5 h-3.5 text-rose-400 inline shrink-0" />
-                        )}
-                        {answer.isPartial && (
-                          <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-semibold border border-amber-500/30 shrink-0">
-                            ⚡ Meio Certa (50%)
-                          </span>
-                        )}
-                        {answer.isUnique && answer.isValid && !answer.isPartial && (
-                          <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-semibold ml-1 shrink-0">
-                            Única
-                          </span>
+                          <>
+                            <span className={answer.isValid ? 'text-emerald-300 font-bold' : 'text-rose-400 line-through'}>
+                              {answer.rawAnswer.toUpperCase()}
+                            </span>
+                            {answer.isValid ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400 inline shrink-0" />
+                            ) : (
+                              <X className="w-3.5 h-3.5 text-rose-400 inline shrink-0" />
+                            )}
+                            {answer.isPartial && (
+                              <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-semibold border border-amber-500/30 shrink-0">
+                                ⚡ Meio Certa (50%)
+                              </span>
+                            )}
+                            {answer.isUnique && answer.isValid && !answer.isPartial && (
+                              <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-semibold ml-1 shrink-0">
+                                Única
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     ) : (

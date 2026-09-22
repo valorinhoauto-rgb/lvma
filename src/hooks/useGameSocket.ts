@@ -575,6 +575,11 @@ export function useGameSocket(userProfile: UserProfile) {
     concludeVoting,
     nextRound,
     resetToLobby,
+    handleTimeUp: () => {
+      if (useClientEngineRef.current) {
+        clientGameEngine.handleRoundTimeUp();
+      }
+    },
     sendChat,
     leaveRoom
   };

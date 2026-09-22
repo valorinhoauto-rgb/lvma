@@ -8,6 +8,7 @@ import { ArrowLeft, RotateCcw, Target, Sparkles, CheckCircle2, HelpCircle } from
 import { LetterStatus, TermoGuessResult, WordEntry } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { addXpToProfile, unlockAchievement } from '../utils/profile.ts';
+import { getAlternatingTermoLength, getRandomTermoTarget, isValidTermoWord } from '../data/termoDictionary.ts';
 
 interface TermoModeViewProps {
   onBack: () => void;
@@ -22,9 +23,8 @@ const KEYBOARD_ROWS = [
 export const TermoModeView: React.FC<TermoModeViewProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [targetWord, setTargetWord] = useState('');
-  const [categoryName, setCategoryName] = useState('');
-  const [wordLength, setWordLength] = useState(6);
-  const [initialLetter, setInitialLetter] = useState('M');
+  const [wordLength, setWordLength] = useState(5);
+  const [roundCount, setRoundCount] = useState(1);
   const [maxTries] = useState(6);
 
   const [guesses, setGuesses] = useState<TermoGuessResult[]>([]);
@@ -34,7 +34,7 @@ export const TermoModeView: React.FC<TermoModeViewProps> = ({ onBack }) => {
   const [letterStatuses, setLetterStatuses] = useState<Record<string, LetterStatus>>({});
 
   // Fetch or generate a fresh Termo target word
-  const initNewGame = async () => {
+  const initNewGame = () => {
     setLoading(true);
     setGuesses([]);
     setCurrentGuess('');
@@ -43,47 +43,14 @@ export const TermoModeView: React.FC<TermoModeViewProps> = ({ onBack }) => {
     setLetterStatuses({});
 
     try {
-      // Pick random category and length
-      const categories = ['animal', 'comida', 'objeto', 'lugar', 'natureza', 'transporte'];
-      const randomCat = categories[Math.floor(Math.random() * categories.length)];
-      const res = await fetch(`/api/words/combinations?category=${randomCat}&minLength=5&maxLength=7`);
-      const data = await res.json();
-      const combList = data.combinations || [];
-
-      if (combList.length > 0) {
-        const comb = combList[Math.floor(Math.random() * combList.length)];
-        const wordRes = await fetch(`/api/validate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            answer: comb.sampleWords[0],
-            round: {
-              letter: comb.letter,
-              categoryId: comb.category,
-              categoryName: comb.category,
-              wordLength: comb.length
-            }
-          })
-        });
-
-        // Use sample word
-        const word = comb.sampleWords[Math.floor(Math.random() * comb.sampleWords.length)].toUpperCase();
-        setTargetWord(word.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/Ç/g, 'C'));
-        setCategoryName(comb.category.toUpperCase());
-        setWordLength(comb.length);
-        setInitialLetter(comb.letter.toUpperCase());
-      } else {
-        // Fallback
-        setTargetWord('MACACO');
-        setCategoryName('ANIMAIS');
-        setWordLength(6);
-        setInitialLetter('M');
-      }
+      const len = getAlternatingTermoLength(roundCount);
+      const chosen = getRandomTermoTarget(len);
+      setWordLength(len);
+      setTargetWord(chosen);
+      setRoundCount(prev => prev + 1);
     } catch {
-      setTargetWord('MACACO');
-      setCategoryName('ANIMAIS');
-      setWordLength(6);
-      setInitialLetter('M');
+      setWordLength(5);
+      setTargetWord('TERMO');
     } finally {
       setLoading(false);
     }
@@ -114,6 +81,12 @@ export const TermoModeView: React.FC<TermoModeViewProps> = ({ onBack }) => {
     if (gameStatus !== 'playing') return;
     if (currentGuess.length !== wordLength) {
       setMessage(`A palavra deve ter ${wordLength} letras.`);
+      sound.playError();
+      return;
+    }
+
+    if (!isValidTermoWord(currentGuess)) {
+      setMessage('Essa palavra não existe no dicionário oficial!');
       sound.playError();
       return;
     }
@@ -194,23 +167,20 @@ export const TermoModeView: React.FC<TermoModeViewProps> = ({ onBack }) => {
 
       {/* Clues Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center shadow-lg">
-        <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-2">
-          Pistas do STOP
-        </div>
         <div className="flex justify-center items-center gap-6">
           <div>
-            <span className="text-xs text-slate-400 block font-medium">Letra Inicial</span>
-            <span className="text-2xl font-black text-emerald-400 font-mono">{initialLetter}</span>
+            <span className="text-xs text-slate-400 block font-medium">Tamanho da Palavra</span>
+            <span className="text-xl font-black text-amber-300 font-mono">{wordLength} LETRAS</span>
           </div>
           <div className="w-px h-8 bg-slate-800" />
           <div>
-            <span className="text-xs text-slate-400 block font-medium">Tema</span>
-            <span className="text-sm font-extrabold text-white">{categoryName}</span>
+            <span className="text-xs text-slate-400 block font-medium">Tentativas</span>
+            <span className="text-xl font-black text-emerald-400 font-mono">{guesses.length} / {maxTries}</span>
           </div>
           <div className="w-px h-8 bg-slate-800" />
           <div>
-            <span className="text-xs text-slate-400 block font-medium">Tamanho</span>
-            <span className="text-sm font-extrabold text-amber-300 font-mono">{wordLength} letras</span>
+            <span className="text-xs text-slate-400 block font-medium">Regra</span>
+            <span className="text-xs font-extrabold text-slate-300">Vocabulário Real</span>
           </div>
         </div>
       </div>

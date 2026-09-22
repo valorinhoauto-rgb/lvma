@@ -67,6 +67,7 @@ export default function App() {
     concludeVoting,
     nextRound,
     resetToLobby,
+    handleTimeUp,
     sendChat,
     leaveRoom
   } = useGameSocket(userProfile);
@@ -284,6 +285,8 @@ export default function App() {
               userAnswer={myAnswer}
               guesses={room.roundAnswers[userProfile.id]?.juiceGuesses || []}
               onSubmitAnswer={submitAnswer}
+              isHost={room.hostId === userProfile.id}
+              onTimeUp={handleTimeUp}
             />
           );
         }

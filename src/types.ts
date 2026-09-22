@@ -93,6 +93,7 @@ export interface TermoGuessResult {
   letterStatuses: LetterStatus[];
   isCorrect: boolean;
   timeMs?: number;
+  inDictionary?: boolean;
 }
 
 export interface JuiceGuessResult {

@@ -4,11 +4,12 @@
  * sem falhar com 404 em /api/rooms.
  */
 
-import { doc, onSnapshot, setDoc, getDoc, Unsubscribe } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc, runTransaction, updateDoc, Unsubscribe } from 'firebase/firestore';
 import { db } from '../lib/firebase.ts';
 import { CATEGORIES } from '../data/words.ts';
 import { getRandomJuicePhoto, validateJuiceGuessDetailed } from '../data/juicePhotos.ts';
 import { wordEngine } from '../server/wordEngine.ts';
+import { isValidTermoWord, getRandomTermoTarget, getAlternatingTermoLength } from '../data/termoDictionary.ts';
 import {
   JuiceGuessResult,
   Player,
@@ -33,6 +34,7 @@ class ClientGameEngine {
   private usedPhotoIds: Set<string> = new Set();
   private isHost: boolean = false;
   private myPlayerId: string | null = null;
+  private isAdvancingRound: boolean = false;
 
   public subscribe(cb: (room: RoomState) => void) {
     this.listeners.add(cb);
@@ -74,6 +76,69 @@ class ClientGameEngine {
     }
   }
 
+  /**
+   * Atualização atômica concorrente de respostas de jogadores no Firestore.
+   * Garante que quando dois ou mais jogadores clicarem em confirmar exatamente no mesmo milissegundo,
+   * nenhuma resposta seja sobrescrita e ambos os acertos sejam computados!
+   */
+  public async submitAnswerToFirestore(
+    roomId: string,
+    playerId: string,
+    answerRecord: PlayerAnswer,
+    playerUpdates: Partial<Player>
+  ) {
+    if (!roomId) return;
+    try {
+      const roomRef = doc(db, 'rooms', roomId);
+      await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(roomRef);
+        if (!snap.exists()) return;
+        const currentData = snap.data() as RoomState;
+        if (!currentData || currentData.status !== 'round_active') return;
+
+        const remotePlayers = (currentData.players || []).map(p => {
+          if (p.id === playerId) {
+            return {
+              ...p,
+              ...playerUpdates,
+              hasAnswered: playerUpdates.hasAnswered !== undefined ? playerUpdates.hasAnswered : p.hasAnswered,
+              currentAnswer: playerUpdates.currentAnswer !== undefined ? playerUpdates.currentAnswer : p.currentAnswer,
+              roundScore: playerUpdates.roundScore !== undefined ? playerUpdates.roundScore : p.roundScore
+            };
+          }
+          return p;
+        });
+
+        // No modo termo_multiplayer, só pode ter um único vencedor por rodada
+        if (currentData.settings?.gameMode === 'termo_multiplayer' && answerRecord.isValid) {
+          const existingWinner = Object.values(currentData.roundAnswers || {}).find(a => a.isValid && a.playerId !== playerId);
+          if (existingWinner) {
+            answerRecord.isValid = false;
+            answerRecord.points = 0;
+            answerRecord.validationReason = 'Acertou, mas outro jogador venceu primeiro!';
+            const myPlayerObj = remotePlayers.find(p => p.id === playerId);
+            if (myPlayerObj) myPlayerObj.roundScore = 0;
+          }
+        }
+
+        transaction.update(roomRef, {
+          [`roundAnswers.${playerId}`]: answerRecord,
+          players: remotePlayers
+        });
+      });
+    } catch (err) {
+      console.warn('Firestore transaction error on submitAnswer, using fallback updateDoc:', err);
+      try {
+        const roomRef = doc(db, 'rooms', roomId);
+        await updateDoc(roomRef, {
+          [`roundAnswers.${playerId}`]: answerRecord
+        });
+      } catch (fallbackErr) {
+        console.warn('Fallback updateDoc failed:', fallbackErr);
+      }
+    }
+  }
+
   public listenToFirestoreRoom(roomId: string) {
     if (this.firestoreUnsub) {
       this.firestoreUnsub();
@@ -111,6 +176,7 @@ class ClientGameEngine {
           this.notify('room:update', { room: remoteState });
 
           if (statusChanged || roundChanged) {
+            this.isAdvancingRound = false;
             if (remoteState.status === 'round_active' && remoteState.currentRound) {
               this.notify('round:start', { round: remoteState.currentRound });
             } else if (remoteState.status === 'round_voting') {
@@ -119,6 +185,22 @@ class ClientGameEngine {
               this.notify('round:end', { answers: remoteState.roundAnswers, players: remoteState.players });
             } else if (remoteState.status === 'game_over') {
               this.notify('game:end', { players: remoteState.players });
+            }
+          }
+
+          // Se eu sou o Host, checar autoritativamente se alguém venceu (Termo) ou se todos responderam para encerrar a rodada sem travar
+          if (this.isHost && remoteState.status === 'round_active' && remoteState.players && remoteState.players.length > 0) {
+            const isTermo = remoteState.settings?.gameMode === 'termo_multiplayer';
+            const hasTermoWinner = isTermo && Object.values(remoteState.roundAnswers || {}).some(a => a.isValid);
+            const allAnswered = remoteState.players.every(p => p.hasAnswered);
+
+            if ((hasTermoWinner || allAnswered) && !this.isAdvancingRound) {
+              this.isAdvancingRound = true;
+              this.clearTimers();
+              this.timerHandle = setTimeout(() => {
+                this.handleRoundTimeUp();
+                this.isAdvancingRound = false;
+              }, 1200);
             }
           }
         }
@@ -295,31 +377,23 @@ class ClientGameEngine {
       };
       this.possibleCurrentWords = [];
     } else if (gameMode === 'termo_multiplayer') {
-      // Modo TERMO Coletivo: Palavra de 5 letras clássica sem limite de tempo e 5 tentativas
-      const targetLength = 5;
-      const comb = wordEngine.getRandomCombination({
-        minLength: targetLength,
-        maxLength: targetLength,
-        selectedCategories
-      }, this.usedCombinations);
+      // Modo TERMO Coletivo: Alternar tamanho das palavras (5, 6 e 7 letras) sem revelar tema ou letra inicial
+      const targetLength = getAlternatingTermoLength(roundNumber);
+      const chosenWordNorm = getRandomTermoTarget(targetLength);
+      this.possibleCurrentWords = [];
 
-      const possibleWords = wordEngine.getWordsForCombination(comb.category, comb.letter, comb.length);
-      const chosenWord = possibleWords[Math.floor(Math.random() * possibleWords.length)];
-      this.possibleCurrentWords = possibleWords;
-
-      const cat = CATEGORIES.find(c => c.id === comb.category);
       const now = Date.now();
       round = {
         roundNumber,
         totalRounds: this.activeRoom.settings.totalRounds,
-        letter: comb.letter,
-        categoryId: comb.category,
-        categoryName: cat ? cat.name : comb.category,
-        wordLength: 5,
+        letter: '?', // Sem dica de letra inicial
+        categoryId: 'termo',
+        categoryName: 'Palavra Secreta', // Sem tema que entregue a resposta
+        wordLength: targetLength,
         timeLimit: 0, // Sem limite de tempo!
         startedAt: now,
         endsAt: 0,
-        targetWord: chosenWord.normalized
+        targetWord: chosenWordNorm
       };
     } else {
       const comb = wordEngine.getRandomCombination({
@@ -468,12 +542,22 @@ class ClientGameEngine {
       });
 
       this.notify('room:update', { room: this.activeRoom });
-      this.syncToFirestore(this.activeRoom);
+      this.submitAnswerToFirestore(this.activeRoom.roomId, playerId, answerRecord, {
+        hasAnswered: player.hasAnswered,
+        currentAnswer: player.currentAnswer,
+        roundScore: player.roundScore
+      });
 
-      const allAnswered = this.activeRoom.players.every(p => p.hasAnswered);
-      if (allAnswered) {
-        this.clearTimers();
-        setTimeout(() => this.handleRoundTimeUp(), 1000);
+      if (this.isHost) {
+        const allAnswered = this.activeRoom.players.every(p => p.hasAnswered);
+        if (allAnswered && !this.isAdvancingRound) {
+          this.isAdvancingRound = true;
+          this.clearTimers();
+          this.timerHandle = setTimeout(() => {
+            this.handleRoundTimeUp();
+            this.isAdvancingRound = false;
+          }, 1000);
+        }
       }
 
       return {
@@ -497,6 +581,17 @@ class ClientGameEngine {
         return null;
       }
 
+      if (!isValidTermoWord(cleanGuess)) {
+        return {
+          room: this.activeRoom,
+          validation: {
+            isValid: false,
+            inDictionary: false,
+            message: 'Essa palavra não existe no dicionário!'
+          }
+        };
+      }
+
       const evaluated = wordEngine.evaluateTermoGuess(cleanGuess, target);
       const isCorrect = evaluated.isCorrect;
       const existingRecord = this.activeRoom.roundAnswers[playerId];
@@ -511,37 +606,75 @@ class ClientGameEngine {
       };
 
       const updatedGuesses = [...previousGuesses, guessObj];
-      const hasWon = isCorrect;
+      const existingWinner = Object.values(this.activeRoom.roundAnswers).find(a => a.isValid && a.playerId !== playerId);
+      const isFirstWinner = isCorrect && !existingWinner;
       const isOutOfTries = updatedGuesses.length >= 5;
+      const triesCount = updatedGuesses.length;
+
+      // Escala de pontuação: 1ª tent = 100, 2ª = 80, 3ª = 60, 4ª = 40, 5ª = 20 pts
+      const pointsScale: Record<number, number> = {
+        1: 100,
+        2: 80,
+        3: 60,
+        4: 40,
+        5: 20
+      };
+      const wonPoints = isFirstWinner ? (pointsScale[triesCount] || 20) : 0;
 
       const answerRecord: PlayerAnswer = {
         playerId,
         playerName: player.name,
         rawAnswer,
         normalizedAnswer: cleanGuess,
-        isValid: hasWon,
+        isValid: isFirstWinner,
         inDictionary: true,
-        isCommunityApproved: hasWon,
+        isCommunityApproved: isFirstWinner,
         votes: { yes: 0, no: 0, voterIds: {} },
         responseTimeMs,
-        points: hasWon ? Math.max(50, (6 - updatedGuesses.length) * 35) : 0,
-        validationReason: hasWon ? `Acertou na tentativa ${updatedGuesses.length}/5!` : (isOutOfTries ? 'Esgotou as 5 tentativas.' : `Tentativa ${updatedGuesses.length}/5`),
-        termoGuesses: updatedGuesses
+        points: wonPoints,
+        validationReason: isFirstWinner
+          ? `Venceu a rodada! Acertou na ${triesCount}ª tentativa (+${wonPoints} pts)!`
+          : (existingWinner && isCorrect
+            ? 'Acertou, mas outro jogador venceu primeiro!'
+            : (isOutOfTries ? 'Esgotou as 5 tentativas.' : `Tentativa ${triesCount}/5`)),
+        termoGuesses: updatedGuesses,
+        guessedTarget: isFirstWinner
       };
 
       this.activeRoom.roundAnswers[playerId] = answerRecord;
-      if (hasWon || isOutOfTries) {
+      if (isFirstWinner || isOutOfTries) {
         player.hasAnswered = true;
         player.currentAnswer = rawAnswer;
+        player.roundScore = wonPoints;
       }
 
       this.notify('room:update', { room: this.activeRoom });
-      this.syncToFirestore(this.activeRoom);
+      this.submitAnswerToFirestore(this.activeRoom.roomId, playerId, answerRecord, {
+        hasAnswered: player.hasAnswered,
+        currentAnswer: player.currentAnswer,
+        roundScore: player.roundScore
+      });
 
-      const allAnswered = this.activeRoom.players.every(p => p.hasAnswered);
-      if (allAnswered) {
-        this.clearTimers();
-        setTimeout(() => this.handleRoundTimeUp(), 1000);
+      if (this.isHost) {
+        if (isFirstWinner) {
+          // Encerrar a rodada imediatamente quando o primeiro jogador acertar!
+          this.clearTimers();
+          this.isAdvancingRound = true;
+          this.timerHandle = setTimeout(() => {
+            this.handleRoundTimeUp();
+            this.isAdvancingRound = false;
+          }, 1200);
+        } else {
+          const allAnswered = this.activeRoom.players.every(p => p.hasAnswered);
+          if (allAnswered && !this.isAdvancingRound) {
+            this.isAdvancingRound = true;
+            this.clearTimers();
+            this.timerHandle = setTimeout(() => {
+              this.handleRoundTimeUp();
+              this.isAdvancingRound = false;
+            }, 1000);
+          }
+        }
       }
 
       return {
@@ -576,19 +709,31 @@ class ClientGameEngine {
 
     this.notify('round:player_answered', { playerId, playerName: player.name, hasAnswered: true });
     this.notify('room:update', { room: this.activeRoom });
-    this.syncToFirestore(this.activeRoom);
+    this.submitAnswerToFirestore(this.activeRoom.roomId, playerId, answerRecord, {
+      hasAnswered: player.hasAnswered,
+      currentAnswer: player.currentAnswer,
+      roundScore: player.roundScore
+    });
 
-    const allAnswered = this.activeRoom.players.every(p => p.hasAnswered);
-    if (allAnswered) {
-      this.clearTimers();
-      setTimeout(() => this.handleRoundTimeUp(), 1000);
+    if (this.isHost) {
+      const allAnswered = this.activeRoom.players.every(p => p.hasAnswered);
+      if (allAnswered && !this.isAdvancingRound) {
+        this.isAdvancingRound = true;
+        this.clearTimers();
+        this.timerHandle = setTimeout(() => {
+          this.handleRoundTimeUp();
+          this.isAdvancingRound = false;
+        }, 1000);
+      }
     }
 
     return { room: this.activeRoom, validation };
   }
 
   public handleRoundTimeUp() {
+    if (!this.isHost) return;
     this.clearTimers();
+    this.isAdvancingRound = false;
     if (!this.activeRoom) return;
 
     if (this.activeRoom.settings.gameMode === 'stop_termo') {
@@ -646,11 +791,24 @@ class ClientGameEngine {
 
     this.notify('round:vote_cast', { voterId, targetPlayerId, approve, votes: ans.votes });
     this.notify('room:update', { room: this.activeRoom });
-    this.syncToFirestore(this.activeRoom);
+
+    // Atomic update in Firestore
+    try {
+      const roomRef = doc(db, 'rooms', this.activeRoom.roomId);
+      updateDoc(roomRef, {
+        [`roundAnswers.${targetPlayerId}.votes`]: ans.votes
+      }).catch(() => {
+        if (this.activeRoom) this.syncToFirestore(this.activeRoom);
+      });
+    } catch {
+      if (this.activeRoom) this.syncToFirestore(this.activeRoom);
+    }
+
     return this.activeRoom;
   }
 
   public concludeVoting() {
+    if (!this.isHost) return;
     this.clearTimers();
     if (!this.activeRoom || this.activeRoom.status !== 'round_voting') return;
 
@@ -670,6 +828,7 @@ class ClientGameEngine {
   }
 
   public endRound() {
+    if (!this.isHost) return;
     this.clearTimers();
     if (!this.activeRoom) return;
 
@@ -685,7 +844,9 @@ class ClientGameEngine {
 
     for (const ans of answers) {
       let pts = 0;
-      if (this.activeRoom.settings.gameMode === 'juice_photo' || this.activeRoom.settings.gameMode === 'termo_multiplayer') {
+      if (this.activeRoom.settings.gameMode === 'termo_multiplayer') {
+        pts = ans.isValid ? ans.points : 0;
+      } else if (this.activeRoom.settings.gameMode === 'juice_photo') {
         pts = ans.points;
       } else {
         if (ans.isValid) {
@@ -704,6 +865,12 @@ class ClientGameEngine {
       }
     }
 
+    for (const player of this.activeRoom.players) {
+      if (!this.activeRoom.roundAnswers[player.id]) {
+        player.roundScore = 0;
+      }
+    }
+
     this.activeRoom.players.sort((a, b) => b.score - a.score);
 
     // Provide sample valid answers
@@ -717,7 +884,7 @@ class ClientGameEngine {
   }
 
   public nextRound() {
-    if (!this.activeRoom) return null;
+    if (!this.activeRoom || !this.isHost) return null;
     this.activeRoom.currentRoundIndex++;
 
     if (this.activeRoom.currentRoundIndex >= this.activeRoom.settings.totalRounds) {
@@ -732,7 +899,7 @@ class ClientGameEngine {
   }
 
   public resetToLobby() {
-    if (!this.activeRoom) return null;
+    if (!this.activeRoom || !this.isHost) return null;
     this.clearTimers();
     this.activeRoom.status = 'lobby';
     this.activeRoom.currentRoundIndex = 0;

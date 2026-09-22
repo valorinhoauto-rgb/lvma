@@ -6,10 +6,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Trophy, Users, CheckCircle2, XCircle, EyeOff, Sparkles, Timer } from 'lucide-react';
+import { Trophy, Users, CheckCircle2, XCircle, EyeOff, Sparkles, Timer, AlertCircle, Zap, Crown } from 'lucide-react';
 import { LetterStatus, Player, PlayerAnswer, RoundConfig, TermoGuessResult } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { PlayerAvatar } from './PlayerAvatar.tsx';
+import { isValidTermoWord } from '../data/termoDictionary.ts';
 
 interface MultiplayerTermoViewProps {
   round: RoundConfig;
@@ -37,13 +38,27 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
   roundAnswers = {}
 }) => {
   const [currentInput, setCurrentInput] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const wordLength = round.wordLength || 5;
   const maxTries = 5; // 5 chances de acertar como é no original
 
+  // Regra de vencedor único por rodada: quem acertar primeiro vence
+  const roundWinnerAnswer = Object.values(roundAnswers).find(a => a.isValid);
+  const roundWinnerPlayer = roundWinnerAnswer ? players.find(p => p.id === roundWinnerAnswer.playerId) : null;
+  const isRoundWon = Boolean(roundWinnerAnswer);
+  const isUserWinner = roundWinnerAnswer?.playerId === currentUserId;
+
   const hasWon = guesses.some(g => g.isCorrect);
   const isOutOfTries = guesses.length >= maxTries;
-  const isGameOver = hasWon || isOutOfTries || hasAnswered;
+  // Se alguém venceu, o jogo se encerra para todos imediatamente
+  const isGameOver = hasWon || isOutOfTries || hasAnswered || isRoundWon;
+
+  useEffect(() => {
+    if (isUserWinner) {
+      sound.playVictory();
+    }
+  }, [isUserWinner]);
 
   // Cronômetro progressivo de tempo decorrido (sem limite estrito de tempo)
   useEffect(() => {
@@ -83,17 +98,26 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
     if (isGameOver) return;
 
     if (key === 'ENTER') {
-      if (currentInput.length === wordLength) {
-        sound.playClick();
-        onSubmitGuess(currentInput);
-        setCurrentInput('');
-      } else {
+      if (currentInput.length !== wordLength) {
+        setErrorMessage(`A palavra deve ter ${wordLength} letras.`);
         sound.playError();
+        return;
       }
+      if (!isValidTermoWord(currentInput)) {
+        setErrorMessage('Palavra não existe no dicionário oficial!');
+        sound.playError();
+        return;
+      }
+      setErrorMessage('');
+      sound.playClick();
+      onSubmitGuess(currentInput);
+      setCurrentInput('');
     } else if (key === 'DEL' || key === 'BACKSPACE') {
+      setErrorMessage('');
       sound.playKeypress();
       setCurrentInput(prev => prev.slice(0, -1));
     } else if (/^[A-Z]$/.test(key) && currentInput.length < wordLength) {
+      setErrorMessage('');
       sound.playKeypress();
       setCurrentInput(prev => prev + key);
     }
@@ -120,37 +144,60 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
   return (
     <div id="multiplayer-termo-view" className="max-w-6xl mx-auto px-3 sm:px-4 py-4 space-y-5">
       {/* Top Header Bar */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
-            <Trophy className="w-5 h-5" />
-          </span>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-wider text-emerald-400">TERMO Multiplayer</span>
-              <span className="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-medium border border-slate-700">
-                5 Tentativas
-              </span>
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-md space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+              <Trophy className="w-5 h-5" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">TERMO Multiplayer</span>
+                <span className="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-medium border border-slate-700">
+                  5 Tentativas
+                </span>
+                <span className="text-[11px] bg-amber-500/15 text-amber-300 px-2 py-0.5 rounded-full font-bold border border-amber-500/30 flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-amber-400" />
+                  1 Vencedor por rodada
+                </span>
+              </div>
+              <div className="text-sm font-semibold text-slate-200 mt-0.5 flex items-center gap-2">
+                <span className="text-amber-400 font-mono font-black text-sm">{wordLength} Letras</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-slate-300">Palavra Secreta</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-emerald-400 font-medium">Dicionário Oficial</span>
+              </div>
             </div>
-            <div className="text-sm font-semibold text-slate-200 mt-0.5">
-              Tema: <span className="text-white font-bold">{round.categoryName}</span>
-              <span className="text-slate-500 mx-2">•</span>
-              Começa com <span className="text-amber-400 font-mono font-black text-base">{round.letter}</span>
-              <span className="text-slate-500 mx-2">•</span>
-              <span className="text-slate-300 font-mono">{wordLength} Letras</span>
+          </div>
+
+          {/* Sem limite de tempo + Relógio progressivo */}
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs font-medium text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Quem acertar 1º vence</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 font-mono font-bold text-sm text-slate-300">
+              <Timer className="w-4 h-4 text-emerald-400" />
+              <span>{formatElapsed(elapsedSeconds)}</span>
             </div>
           </div>
         </div>
 
-        {/* Sem limite de tempo + Relógio progressivo */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs font-medium text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Sem limite de tempo</span>
+        {/* Faixa explicativa das regras de pontuação por agilidade e tentativas */}
+        <div className="bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-1.5 text-amber-300 font-bold">
+            <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>Quem acertar primeiro vence a rodada!</span>
+            <span className="text-slate-400 font-normal hidden sm:inline">— Menos tentativas = Mais pontos</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 font-mono font-bold text-sm text-slate-300">
-            <Timer className="w-4 h-4 text-emerald-400" />
-            <span>{formatElapsed(elapsedSeconds)}</span>
+          <div className="flex items-center gap-1.5 text-[11px] font-mono">
+            <span className="text-slate-400 mr-1">Pontos:</span>
+            <span className="bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-bold border border-emerald-500/30">1ª: 100</span>
+            <span className="bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded font-bold border border-emerald-500/20">2ª: 80</span>
+            <span className="bg-amber-500/15 text-amber-300 px-1.5 py-0.5 rounded font-bold border border-amber-500/20">3ª: 60</span>
+            <span className="bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded font-bold border border-amber-500/20">4ª: 40</span>
+            <span className="bg-rose-500/15 text-rose-300 px-1.5 py-0.5 rounded font-bold border border-rose-500/20">5ª: 20</span>
           </div>
         </div>
       </div>
@@ -159,7 +206,7 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
       <div className={`grid grid-cols-1 ${opponents.length > 0 ? 'lg:grid-cols-12' : ''} gap-6 items-start`}>
         
         {/* COLUNA ESQUERDA: Seu Tabuleiro (Jogador Atual) */}
-        <div className={`${opponents.length > 0 ? 'lg:col-span-7' : 'max-w-xl mx-auto w-full'} bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl`}>
+        <div className={`${opponents.length > 0 ? 'lg:col-span-7' : 'max-w-xl mx-auto w-full'} bg-slate-900/60 border ${isUserWinner ? 'border-emerald-500/60 shadow-emerald-500/10' : 'border-slate-800'} rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl transition-all`}>
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
             <div className="flex items-center gap-2.5">
               <PlayerAvatar
@@ -180,10 +227,15 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
               </div>
             </div>
 
-            {hasWon ? (
-              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 px-3 py-1 rounded-xl">
+            {isUserWinner ? (
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 px-3 py-1 rounded-xl animate-pulse">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Acertou! (+{roundAnswers[currentUserId]?.points || 0} pts)</span>
+                <span>Vencedor! (+{roundWinnerAnswer?.points || 0} pts)</span>
+              </div>
+            ) : isRoundWon ? (
+              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40 px-3 py-1 rounded-xl">
+                <Zap className="w-4 h-4 text-amber-400" />
+                <span>Rodada encerrada</span>
               </div>
             ) : isOutOfTries ? (
               <div className="flex items-center gap-1.5 text-xs font-bold text-rose-300 bg-rose-950/60 border border-rose-500/40 px-3 py-1 rounded-xl">
@@ -240,19 +292,56 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
             })}
           </div>
 
-          {/* Banner de status quando finalizou o próprio jogo */}
+          {/* Banner de status quando finalizou o próprio jogo ou alguém venceu */}
+          {errorMessage && !isGameOver && (
+            <div className="flex items-center justify-center gap-2 text-rose-400 bg-rose-950/60 border border-rose-500/30 px-3 py-1.5 rounded-xl text-xs font-bold">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {isGameOver && (
-            <div className={`p-3 rounded-xl border text-center text-xs sm:text-sm font-bold animate-fade-in ${
-              hasWon
-                ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
+            <div className={`p-4 rounded-xl border text-center text-xs sm:text-sm font-bold shadow-lg animate-fade-in ${
+              isUserWinner
+                ? 'bg-gradient-to-r from-emerald-950/90 to-teal-950/90 border-emerald-500/50 text-emerald-300 shadow-emerald-500/10'
+                : isRoundWon
+                ? 'bg-gradient-to-r from-slate-900 to-amber-950/70 border-amber-500/40 text-amber-300 shadow-amber-500/10'
                 : 'bg-rose-950/50 border-rose-500/40 text-rose-300'
             }`}>
-              {hasWon
-                ? `🎉 Parabéns! Você acertou na ${guesses.length}ª tentativa!`
-                : 'Você esgotou as 5 tentativas.'}
-              <div className="text-xs text-slate-400 font-normal mt-0.5">
-                Acompanhe o tabuleiro dos outros jogadores ao lado em tempo real.
-              </div>
+              {isUserWinner ? (
+                <div className="space-y-1">
+                  <div className="text-base sm:text-lg font-black text-emerald-300 flex items-center justify-center gap-2">
+                    <Trophy className="w-5 h-5 text-amber-400" />
+                    <span>VOCÊ ACERTOU PRIMEIRO E VENCEU A RODADA!</span>
+                  </div>
+                  <div className="text-xs sm:text-sm text-slate-200">
+                    Acertou na <span className="font-bold text-emerald-400">{guesses.length}ª tentativa</span> • Pontuação: <span className="font-mono font-black text-emerald-400">+{roundWinnerAnswer?.points || 0} pts</span>
+                  </div>
+                  <div className="text-xs text-slate-400 font-normal">
+                    Encerrando a rodada para mostrar os resultados...
+                  </div>
+                </div>
+              ) : isRoundWon ? (
+                <div className="space-y-1">
+                  <div className="text-sm sm:text-base font-black text-amber-300 flex items-center justify-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-400" />
+                    <span>{roundWinnerPlayer?.name || 'Um adversário'} ACERTOU PRIMEIRO E VENCEU!</span>
+                  </div>
+                  <div className="text-xs text-slate-300">
+                    Acertou na {roundWinnerAnswer?.termoGuesses?.length || 1}ª tentativa (+{roundWinnerAnswer?.points || 0} pts). No Termo, apenas o primeiro a acertar pontua!
+                  </div>
+                  <div className="text-xs text-slate-400 font-normal">
+                    Preparando resultados da rodada...
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-0.5">
+                  <div>Você esgotou as 5 tentativas sem acertar.</div>
+                  <div className="text-xs text-slate-400 font-normal">
+                    Aguarde para ver se algum adversário consegue acertar primeiro!
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -319,14 +408,18 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
                 {opponents.map((opponent) => {
                   const oppAnswer = roundAnswers[opponent.id];
                   const oppGuesses: TermoGuessResult[] = oppAnswer?.termoGuesses || [];
-                  const oppWon = oppGuesses.some(g => g.isCorrect) || Boolean(oppAnswer?.isValid);
+                  const isOppWinner = Boolean(oppAnswer?.isValid);
                   const oppOutOfTries = oppGuesses.length >= maxTries;
-                  const oppFinished = opponent.hasAnswered || oppWon || oppOutOfTries;
+                  const oppFinished = opponent.hasAnswered || isOppWinner || oppOutOfTries || isRoundWon;
 
                   return (
                     <div
                       key={opponent.id}
-                      className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 space-y-2.5 transition-all hover:border-slate-700"
+                      className={`border rounded-xl p-3 space-y-2.5 transition-all ${
+                        isOppWinner
+                          ? 'bg-amber-950/30 border-amber-500/50 shadow-md shadow-amber-500/10 ring-1 ring-amber-500/30'
+                          : 'bg-slate-950/70 border-slate-800/80 hover:border-slate-700'
+                      }`}
                     >
                       {/* Header do Adversário */}
                       <div className="flex items-center justify-between">
@@ -339,17 +432,25 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
                           <div>
                             <div className="text-xs font-bold text-white flex items-center gap-1.5">
                               <span>{opponent.name}</span>
-                              {opponent.isBot && (
+                              {isOppWinner && (
+                                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-black border border-amber-500/30 flex items-center gap-0.5">
+                                  <Crown className="w-3 h-3 text-amber-400" />
+                                  VENCEDOR
+                                </span>
+                              )}
+                              {opponent.isBot && !isOppWinner && (
                                 <span className="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded font-mono">
                                   BOT
                                 </span>
                               )}
                             </div>
                             <div className="text-[11px] text-slate-400">
-                              {oppWon ? (
-                                <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                                  <Sparkles className="w-3 h-3" /> Acertou em {oppGuesses.length} tentativa{oppGuesses.length > 1 ? 's' : ''}!
+                              {isOppWinner ? (
+                                <span className="text-amber-300 font-bold flex items-center gap-1">
+                                  <Trophy className="w-3 h-3 text-amber-400" /> Venceu a rodada na {oppGuesses.length}ª tentativa!
                                 </span>
+                              ) : isRoundWon ? (
+                                <span className="text-slate-500">Rodada finalizada</span>
                               ) : oppOutOfTries ? (
                                 <span className="text-rose-400 font-medium">Esgotou as 5 tentativas</span>
                               ) : oppGuesses.length > 0 ? (
@@ -363,10 +464,18 @@ export const MultiplayerTermoView: React.FC<MultiplayerTermoViewProps> = ({
 
                         {/* Status pill do adversário */}
                         <div>
-                          {oppWon ? (
-                            <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-lg">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
+                          {isOppWinner ? (
+                            <span className="flex items-center gap-1 text-[11px] font-black text-amber-300 bg-amber-950/60 border border-amber-500/40 px-2.5 py-0.5 rounded-lg animate-pulse">
+                              <Trophy className="w-3.5 h-3.5 text-amber-400" />
                               +{oppAnswer?.points || 0} pts
+                            </span>
+                          ) : isRoundWon ? (
+                            <span className="text-[11px] font-bold text-slate-500 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-lg">
+                              0 pts
+                            </span>
+                          ) : oppOutOfTries ? (
+                            <span className="text-[11px] font-bold text-rose-400 bg-rose-950/40 border border-rose-500/30 px-2 py-0.5 rounded-lg">
+                              Esgotado
                             </span>
                           ) : oppFinished ? (
                             <span className="text-[11px] font-bold text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-lg">

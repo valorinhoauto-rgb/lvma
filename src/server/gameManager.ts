@@ -7,6 +7,7 @@
 import { WebSocket } from 'ws';
 import { CATEGORIES } from '../data/words.ts';
 import { getRandomJuicePhoto, validateJuiceGuess, validateJuiceGuessDetailed } from '../data/juicePhotos.ts';
+import { getAlternatingTermoLength, getRandomTermoTarget, isValidTermoWord } from '../data/termoDictionary.ts';
 import {
   GameMode,
   JuiceGuessResult,
@@ -167,31 +168,23 @@ export class Room {
       };
       this.possibleCurrentWords = [];
     } else if (gameMode === 'termo_multiplayer') {
-      // Modo TERMO Coletivo: Palavra de 5 letras clássica sem limite de tempo e 5 tentativas
-      const targetLength = 5;
-      const comb = wordEngine.getRandomCombination({
-        minLength: targetLength,
-        maxLength: targetLength,
-        selectedCategories
-      }, this.usedCombinations);
+      // Modo TERMO Coletivo: Alternar tamanho das palavras (5, 6 e 7 letras) sem revelar tema ou letra inicial
+      const targetLength = getAlternatingTermoLength(roundNumber);
+      const chosenWordNorm = getRandomTermoTarget(targetLength);
+      this.possibleCurrentWords = [];
 
-      const possibleWords = wordEngine.getWordsForCombination(comb.category, comb.letter, comb.length);
-      const chosenWord = possibleWords[Math.floor(Math.random() * possibleWords.length)];
-      this.possibleCurrentWords = possibleWords;
-
-      const cat = CATEGORIES.find(c => c.id === comb.category);
       const now = Date.now();
       round = {
         roundNumber,
         totalRounds: this.state.settings.totalRounds,
-        letter: comb.letter,
-        categoryId: comb.category,
-        categoryName: cat ? cat.name : comb.category,
-        wordLength: 5,
+        letter: '?', // Sem dica de letra inicial
+        categoryId: 'termo',
+        categoryName: 'Palavra Secreta', // Sem tema que entregue a resposta
+        wordLength: targetLength,
         timeLimit: 0, // Sem limite de tempo!
         startedAt: now,
         endsAt: 0,
-        targetWord: chosenWord.normalized
+        targetWord: chosenWordNorm
       };
     } else {
       // Modo STOP + TERMO Clássico com garantia de palavras válidas
@@ -369,6 +362,10 @@ export class Room {
         return { success: false, reason: `Palavra deve ter ${round.wordLength} letras.` };
       }
 
+      if (!isValidTermoWord(cleanGuess)) {
+        return { success: false, reason: 'Essa palavra não existe no dicionário oficial.' };
+      }
+
       const evaluated = wordEngine.evaluateTermoGuess(cleanGuess, target);
       const isCorrect = evaluated.isCorrect;
 
@@ -384,28 +381,44 @@ export class Room {
       };
 
       const updatedGuesses = [...previousGuesses, guessObj];
-      const hasWon = isCorrect;
+      const existingWinner = Object.values(this.state.roundAnswers).find(a => a.isValid && a.playerId !== playerId);
+      const isFirstWinner = isCorrect && !existingWinner;
       const isOutOfTries = updatedGuesses.length >= 5;
+      const triesCount = updatedGuesses.length;
+
+      // Escala de pontuação: 1ª tent = 100, 2ª = 80, 3ª = 60, 4ª = 40, 5ª = 20 pts
+      const pointsScale: Record<number, number> = {
+        1: 100,
+        2: 80,
+        3: 60,
+        4: 40,
+        5: 20
+      };
+      const wonPoints = isFirstWinner ? (pointsScale[triesCount] || 20) : 0;
 
       const answerRecord: PlayerAnswer = {
         playerId,
         playerName: player.name,
         rawAnswer,
         normalizedAnswer: cleanGuess,
-        isValid: hasWon,
+        isValid: isFirstWinner,
         inDictionary: true,
-        isCommunityApproved: hasWon,
+        isCommunityApproved: isFirstWinner,
         votes: { yes: 0, no: 0, voterIds: {} },
         responseTimeMs,
-        points: hasWon ? Math.max(50, (6 - updatedGuesses.length) * 35) : 0,
-        validationReason: hasWon ? `Acertou na tentativa ${updatedGuesses.length}/5!` : (isOutOfTries ? 'Esgotou as 5 tentativas.' : `Tentativa ${updatedGuesses.length}/5`),
+        points: wonPoints,
+        validationReason: isFirstWinner
+          ? `Venceu a rodada! Acertou na ${triesCount}ª tentativa (+${wonPoints} pts)!`
+          : (existingWinner && isCorrect
+            ? 'Acertou, mas outro jogador venceu primeiro!'
+            : (isOutOfTries ? 'Esgotou as 5 tentativas.' : `Tentativa ${triesCount}/5`)),
         termoGuesses: updatedGuesses,
-        guessedTarget: hasWon
+        guessedTarget: isFirstWinner
       };
 
       this.state.roundAnswers[playerId] = answerRecord;
 
-      if (hasWon || isOutOfTries) {
+      if (isFirstWinner || isOutOfTries) {
         player.hasAnswered = true;
       }
 
@@ -413,15 +426,21 @@ export class Room {
         playerId,
         guessResult: guessObj,
         triesCount: updatedGuesses.length,
-        hasWon
+        hasWon: isFirstWinner
       });
 
-      const allFinished = this.state.players.every(p => p.hasAnswered);
-      if (allFinished) {
+      if (isFirstWinner) {
+        // Encerra a rodada imediatamente pois já temos o vencedor único da rodada
         this.clearAllTimers();
-        setTimeout(() => this.handleRoundTimeUp(), 1000);
+        setTimeout(() => this.handleRoundTimeUp(), 1200);
       } else {
-        this.broadcastState();
+        const allFinished = this.state.players.every(p => p.hasAnswered);
+        if (allFinished) {
+          this.clearAllTimers();
+          setTimeout(() => this.handleRoundTimeUp(), 1000);
+        } else {
+          this.broadcastState();
+        }
       }
 
       return { success: true, termoResult: guessObj };

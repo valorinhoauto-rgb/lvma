@@ -21,6 +21,8 @@ interface JuicePhotoModeViewProps {
   userAnswer?: string;
   guesses?: JuiceGuessResult[];
   onSubmitAnswer: (answer: string) => Promise<any> | void;
+  isHost?: boolean;
+  onTimeUp?: () => void;
 }
 
 export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
@@ -30,7 +32,9 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
   hasAnswered,
   userAnswer,
   guesses = [],
-  onSubmitAnswer
+  onSubmitAnswer,
+  isHost = false,
+  onTimeUp
 }) => {
   const [inputVal, setInputVal] = useState('');
   const [timeLeft, setTimeLeft] = useState(round.timeLimit);
@@ -75,18 +79,23 @@ export const JuicePhotoModeView: React.FC<JuicePhotoModeViewProps> = ({
 
   // Round countdown timer
   useEffect(() => {
+    let triggered = false;
     const updateTimer = () => {
       const remaining = Math.max(0, Math.ceil((round.endsAt - Date.now()) / 1000));
       setTimeLeft(remaining);
       if (remaining <= 5 && remaining > 0) {
         sound.playTick();
       }
+      if (remaining === 0 && round.endsAt > 0 && isHost && !triggered) {
+        triggered = true;
+        onTimeUp?.();
+      }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 500);
     return () => clearInterval(interval);
-  }, [round.endsAt]);
+  }, [round.endsAt, isHost, onTimeUp]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();

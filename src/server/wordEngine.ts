@@ -5,6 +5,9 @@
 
 import { CATEGORIES, WORD_CATALOG, normalizeWord } from '../data/words.ts';
 import { CombinationStats, LetterStatus, RoundConfig, RoundRestrictions, TermoGuessResult, WordEntry } from '../types.ts';
+import { isValidTermoWord, getRandomTermoTarget, getAlternatingTermoLength } from '../data/termoDictionary.ts';
+
+export { isValidTermoWord, getRandomTermoTarget, getAlternatingTermoLength };
 
 // Dynamic runtime user-contributed suggestions storage
 export const userSuggestions: Array<{
@@ -360,11 +363,14 @@ class WordEngine {
       }
     }
 
+    const isValid = isValidTermoWord(normGuess);
+
     return {
       guess: normGuess,
       normalized: normGuess,
       letterStatuses: statuses,
-      isCorrect: normGuess === normTarget
+      isCorrect: normGuess === normTarget,
+      inDictionary: isValid
     };
   }
 
