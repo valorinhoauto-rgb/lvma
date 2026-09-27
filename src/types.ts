@@ -91,6 +91,14 @@ export interface RoundConfig {
     hint: string;
     difficulty?: 'facil' | 'medio' | 'dificil';
   };
+  playerForcaChallenges?: Record<string, {
+    id: string;
+    word: string;
+    normalized: string;
+    category: string;
+    hint: string;
+    difficulty?: 'facil' | 'medio' | 'dificil';
+  }>;
 }
 
 export type LetterStatus = 'correct' | 'present' | 'absent' | 'empty';

@@ -110,19 +110,26 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
       )}
 
       {/* Forca Challenge Reveal */}
-      {round.forcaChallenge && (
+      {(round.playerForcaChallenges?.[currentUserId] || round.forcaChallenge) && (
         <div className="bg-slate-900 border border-amber-500/40 rounded-2xl p-4 shadow-xl text-center space-y-1">
-          <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
-            <span>Palavra Secreta da Forca • {round.forcaChallenge.category}</span>
-          </div>
-          <div className="text-2xl font-black text-white font-mono tracking-widest uppercase">
-            {round.forcaChallenge.word}
-          </div>
-          {round.forcaChallenge.hint && (
-            <div className="text-xs text-slate-400">
-              Dica: {round.forcaChallenge.hint}
-            </div>
-          )}
+          {(() => {
+            const myChallenge = round.playerForcaChallenges?.[currentUserId] || round.forcaChallenge!;
+            return (
+              <>
+                <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
+                  <span>Sua Palavra Secreta da Forca • {myChallenge.category}</span>
+                </div>
+                <div className="text-2xl font-black text-white font-mono tracking-widest uppercase">
+                  {myChallenge.word}
+                </div>
+                {myChallenge.hint && (
+                  <div className="text-xs text-slate-400">
+                    Dica: {myChallenge.hint}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 
@@ -292,9 +299,14 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
                                 ? `Salvou o boneco (${answer.forcaWrongCount || 0} erros)`
                                 : `Enforcado (${answer.forcaWrongCount || 6}/6 erros)`}
                             </span>
+                            {round.playerForcaChallenges?.[player.id] && (
+                              <span className="text-[11px] text-amber-300/90 font-medium bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                Palavra: {round.playerForcaChallenges[player.id].word}
+                              </span>
+                            )}
                             {answer.isValid && (
                               <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-black border border-amber-500/30">
-                                🏆 VENCEDOR
+                                🏆 SALVOU
                               </span>
                             )}
                           </div>

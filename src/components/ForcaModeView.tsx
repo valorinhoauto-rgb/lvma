@@ -47,7 +47,7 @@ export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
   roundAnswers,
   onSubmitGuess
 }) => {
-  const challenge = round.forcaChallenge;
+  const challenge = round.playerForcaChallenges?.[currentUserId] || round.forcaChallenge;
   const targetWord = challenge?.word || round.targetWord || 'FORCA';
   const targetNormalized = challenge?.normalized || normalizeForcaString(targetWord);
   const targetLength = targetNormalized.length;
@@ -422,6 +422,21 @@ export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
             </div>
           )}
 
+          {/* Waiting banner for when current user finished but opponents are still guessing */}
+          {isFinished && opponents.some(opp => {
+            const oppAns = roundAnswers[opp.id];
+            const oppWon = Boolean(oppAns?.forcaWon || oppAns?.guessedTarget);
+            const oppHanged = (oppAns?.forcaWrongCount || 0) >= 6;
+            return !oppWon && !oppHanged && !opp.hasAnswered;
+          }) && (
+            <div className="bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 rounded-2xl p-3 text-center text-xs sm:text-sm font-semibold text-amber-700 dark:text-amber-300 flex items-center justify-center gap-2">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+              <span>
+                {isWon ? '🎉 Você salvou seu boneco!' : '💀 Você foi enforcado.'} O jogo continua enquanto o outro jogador termina a palavra dele...
+              </span>
+            </div>
+          )}
+
           {/* Action Bar: "Arriscar Palavra" and Celebration button */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -472,6 +487,8 @@ export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
               const oppWrong = Math.min(6, oppAns?.forcaWrongCount || 0);
               const oppWon = Boolean(oppAns?.forcaWon || oppAns?.guessedTarget);
               const oppHanged = oppWrong >= 6;
+              const oppChallenge = round.playerForcaChallenges?.[opp.id] || round.forcaChallenge;
+              const oppLength = oppChallenge?.normalized?.length || 0;
 
               return (
                 <div
@@ -487,7 +504,7 @@ export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
                         {opp.name}
                       </div>
                       <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {oppWon ? '🎉 Acertou!' : oppHanged ? '💀 Enforcado' : `${oppWrong}/6 erros`}
+                        {oppWon ? '🎉 Salvou o boneco!' : oppHanged ? '💀 Enforcado' : `${oppWrong}/6 erros • ${oppLength} letras`}
                       </div>
                     </div>
                   </div>
@@ -495,7 +512,7 @@ export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
                   <div className="flex items-center gap-1">
                     {oppWon ? (
                       <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold rounded-md">
-                        Venceu!
+                        Salvo!
                       </span>
                     ) : oppHanged ? (
                       <span className="px-2 py-0.5 bg-rose-500/15 text-rose-600 dark:text-rose-400 text-[11px] font-bold rounded-md">
@@ -503,7 +520,7 @@ export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
                       </span>
                     ) : (
                       <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                        {oppAns?.forcaRevealedCount || 0} letras
+                        {oppAns?.forcaRevealedCount || 0}/{oppLength} letras
                       </span>
                     )}
                   </div>
