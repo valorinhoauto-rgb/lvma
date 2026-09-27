@@ -39,6 +39,63 @@ const KEYBOARD_ROWS = [
   ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
 ];
 
+interface ForcaCharSlot {
+  id: string;
+  char: string;
+  normalized: string;
+  isSeparator?: boolean;
+}
+
+interface ForcaWordGroup {
+  id: string;
+  slots: ForcaCharSlot[];
+}
+
+function parseForcaPhrase(originalWord: string): ForcaWordGroup[] {
+  const raw = (originalWord || '').trim();
+  if (!raw) return [];
+
+  const spaceTokens = raw.split(/\s+/);
+  const result: ForcaWordGroup[] = [];
+
+  spaceTokens.forEach((spaceToken, sIdx) => {
+    const hyphenParts = spaceToken.split('-');
+    hyphenParts.forEach((part, pIdx) => {
+      const slots: ForcaCharSlot[] = [];
+      for (let i = 0; i < part.length; i++) {
+        const char = part[i].toUpperCase();
+        const norm = normalizeForcaString(char);
+        if (norm) {
+          slots.push({
+            id: `s${sIdx}-p${pIdx}-c${i}`,
+            char,
+            normalized: norm,
+            isSeparator: false
+          });
+        }
+      }
+
+      if (pIdx < hyphenParts.length - 1) {
+        slots.push({
+          id: `s${sIdx}-p${pIdx}-sep`,
+          char: '-',
+          normalized: '',
+          isSeparator: true
+        });
+      }
+
+      if (slots.length > 0) {
+        result.push({
+          id: `w-${sIdx}-${pIdx}`,
+          slots
+        });
+      }
+    });
+  });
+
+  return result;
+}
+
 export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
   round,
   players,
@@ -51,6 +108,22 @@ export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
   const targetWord = challenge?.word || round.targetWord || 'FORCA';
   const targetNormalized = challenge?.normalized || normalizeForcaString(targetWord);
   const targetLength = targetNormalized.length;
+
+  const parsedWords = React.useMemo(() => parseForcaPhrase(targetWord), [targetWord]);
+  const maxWordLetters = React.useMemo(() => {
+    return Math.max(...parsedWords.map(w => w.slots.filter(s => !s.isSeparator).length), 1);
+  }, [parsedWords]);
+
+  // Responsive slot sizes so words like "DINOSSAURO" (10 letters) never break awkwardly in the middle
+  const tileSizeClasses = React.useMemo(() => {
+    if (maxWordLetters <= 6 && targetLength <= 7) {
+      return 'w-9 sm:w-11 md:w-12 h-12 sm:h-14 md:h-16 text-lg sm:text-xl md:text-2xl';
+    }
+    if (maxWordLetters <= 8 && targetLength <= 10) {
+      return 'w-7.5 sm:w-9 md:w-10.5 h-11 sm:h-13 md:h-14 text-base sm:text-lg md:text-xl';
+    }
+    return 'w-7 sm:w-8 md:w-9 h-10 sm:h-11 md:h-13 text-sm sm:text-base md:text-lg';
+  }, [maxWordLetters, targetLength]);
 
   const myAnswer = roundAnswers[currentUserId];
   const myGuesses = myAnswer?.forcaGuesses || [];
@@ -160,7 +233,7 @@ export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
           </div>
 
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 hidden sm:inline">
-            {targetLength} letras
+            {targetLength} letras{parsedWords.length > 1 ? ` • ${parsedWords.length} palavras` : ''}
           </span>
         </div>
 
@@ -193,11 +266,11 @@ export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
       </div>
 
       {/* Main Game Stage: Gallows + Secret Word */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
-        {/* Gallows SVG Graphic (4 cols on desktop) */}
-        <div className="md:col-span-4 bg-gradient-to-b from-amber-50/50 to-orange-50/30 dark:from-slate-900 dark:to-slate-900/50 p-4 rounded-3xl border border-amber-200/60 dark:border-slate-800 flex flex-col items-center justify-center relative overflow-hidden min-h-[260px]">
+      <div className="flex flex-col md:flex-row gap-4 sm:gap-5 items-stretch">
+        {/* Gallows SVG Graphic */}
+        <div className="w-full md:w-56 lg:w-60 shrink-0 bg-gradient-to-b from-amber-50/50 to-orange-50/30 dark:from-slate-900 dark:to-slate-900/50 p-4 rounded-3xl border border-amber-200/60 dark:border-slate-800 flex flex-col items-center justify-center relative overflow-hidden min-h-[240px]">
           {/* Hangman SVG */}
-          <div className="w-48 h-56 relative flex items-center justify-center">
+          <div className="w-44 h-52 relative flex items-center justify-center">
             <svg viewBox="0 0 200 240" className="w-full h-full drop-shadow-sm">
               {/* Gallows Wood Beam Structures */}
               {/* Ground beam */}
@@ -345,8 +418,8 @@ export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
           </div>
         </div>
 
-        {/* Secret Word & Hint Arena (8 cols on desktop) */}
-        <div className="md:col-span-8 flex flex-col justify-between gap-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-5 sm:p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        {/* Secret Word & Hint Arena */}
+        <div className="flex-1 min-w-0 flex flex-col justify-between gap-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 sm:p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
           {/* Hint Card */}
           {challenge?.hint && (
             <div className="bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 rounded-2xl p-3.5 flex items-start gap-3">
@@ -377,42 +450,59 @@ export const ForcaModeView: React.FC<ForcaModeViewProps> = ({
             </div>
           )}
 
-          {/* Secret Word Slots Display */}
-          <div className="py-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-            {targetNormalized.split('').map((letter, idx) => {
-              const isRevealed = myGuesses.includes(letter) || isFinished;
-              const isMissingAtEnd = isHanged && !myGuesses.includes(letter);
+          {/* Secret Word Slots Display: agrupado por palavra com espaçamento para compostas e quebra limpa */}
+          <div className="py-4 sm:py-6 flex flex-wrap items-center justify-center gap-x-5 sm:gap-x-7 gap-y-3 sm:gap-y-4 max-w-full overflow-x-auto px-1">
+            {parsedWords.map(wordGroup => (
+              <div
+                key={wordGroup.id}
+                className="flex items-center gap-1 sm:gap-1.5 flex-nowrap shrink-0"
+              >
+                {wordGroup.slots.map(slot => {
+                  if (slot.isSeparator) {
+                    return (
+                      <div
+                        key={slot.id}
+                        className="flex items-center justify-center px-1 text-slate-400 dark:text-slate-500 font-black text-lg sm:text-2xl select-none"
+                      >
+                        -
+                      </div>
+                    );
+                  }
 
-              return (
-                <motion.div
-                  key={idx}
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: idx * 0.03 }}
-                  className={`w-10 h-14 sm:w-12 sm:h-16 rounded-xl border-b-4 flex items-center justify-center font-black text-xl sm:text-2xl transition-all shadow-sm ${
-                    isRevealed
-                      ? isWon
-                        ? 'bg-emerald-500 text-white border-emerald-700 shadow-emerald-500/20'
-                        : isMissingAtEnd
-                        ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white border-slate-300 dark:border-slate-600'
-                      : 'bg-slate-50 dark:bg-slate-900 text-transparent border-slate-400 dark:border-slate-700'
-                  }`}
-                >
-                  {isRevealed ? (
-                    <motion.span
-                      initial={{ scale: 0.5, y: -5 }}
-                      animate={{ scale: 1, y: 0 }}
-                      transition={{ type: 'spring', stiffness: 400 }}
+                  const isRevealed = myGuesses.includes(slot.normalized) || isFinished;
+                  const isMissingAtEnd = isHanged && !myGuesses.includes(slot.normalized);
+
+                  return (
+                    <motion.div
+                      key={slot.id}
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className={`${tileSizeClasses} rounded-xl border-b-4 flex items-center justify-center font-black transition-all shadow-sm ${
+                        isRevealed
+                          ? isWon
+                            ? 'bg-emerald-500 text-white border-emerald-700 shadow-emerald-500/20'
+                            : isMissingAtEnd
+                            ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white border-slate-300 dark:border-slate-600'
+                          : 'bg-slate-50 dark:bg-slate-900 text-transparent border-slate-400 dark:border-slate-700'
+                      }`}
                     >
-                      {letter}
-                    </motion.span>
-                  ) : (
-                    <span className="w-4 h-1 bg-slate-400 dark:bg-slate-600 rounded-full" />
-                  )}
-                </motion.div>
-              );
-            })}
+                      {isRevealed ? (
+                        <motion.span
+                          initial={{ scale: 0.5, y: -5 }}
+                          animate={{ scale: 1, y: 0 }}
+                          transition={{ type: 'spring', stiffness: 400 }}
+                        >
+                          {slot.char}
+                        </motion.span>
+                      ) : (
+                        <span className="w-3 sm:w-3.5 h-1 bg-slate-400 dark:bg-slate-600 rounded-full" />
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
 
           {/* Feedback message banner */}

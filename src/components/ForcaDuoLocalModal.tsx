@@ -34,6 +34,63 @@ const KEYBOARD_ROWS = [
   ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
 ];
 
+interface ForcaCharSlot {
+  id: string;
+  char: string;
+  normalized: string;
+  isSeparator?: boolean;
+}
+
+interface ForcaWordGroup {
+  id: string;
+  slots: ForcaCharSlot[];
+}
+
+function parseForcaPhrase(originalWord: string): ForcaWordGroup[] {
+  const raw = (originalWord || '').trim();
+  if (!raw) return [];
+
+  const spaceTokens = raw.split(/\s+/);
+  const result: ForcaWordGroup[] = [];
+
+  spaceTokens.forEach((spaceToken, sIdx) => {
+    const hyphenParts = spaceToken.split('-');
+    hyphenParts.forEach((part, pIdx) => {
+      const slots: ForcaCharSlot[] = [];
+      for (let i = 0; i < part.length; i++) {
+        const char = part[i].toUpperCase();
+        const norm = normalizeForcaString(char);
+        if (norm) {
+          slots.push({
+            id: `s${sIdx}-p${pIdx}-c${i}`,
+            char,
+            normalized: norm,
+            isSeparator: false
+          });
+        }
+      }
+
+      if (pIdx < hyphenParts.length - 1) {
+        slots.push({
+          id: `s${sIdx}-p${pIdx}-sep`,
+          char: '-',
+          normalized: '',
+          isSeparator: true
+        });
+      }
+
+      if (slots.length > 0) {
+        result.push({
+          id: `w-${sIdx}-${pIdx}`,
+          slots
+        });
+      }
+    });
+  });
+
+  return result;
+}
+
 export const ForcaDuoLocalModal: React.FC<ForcaDuoLocalModalProps> = ({
   isOpen = true,
   onClose,
@@ -390,28 +447,40 @@ export const ForcaDuoLocalModal: React.FC<ForcaDuoLocalModalProps> = ({
             </div>
 
             {/* Secret Word Tiles */}
-            <div className="flex flex-wrap items-center justify-center gap-2 py-2">
-              {activeNormalized.split('').map((letter, idx) => {
-                const isRevealed = guessedLetters.includes(letter) || isRoundOver;
-                const isMissed = isHanged && !guessedLetters.includes(letter);
+            <div className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-6 gap-y-2 py-3 max-w-full overflow-x-auto px-1">
+              {parseForcaPhrase(activeWord).map(wordGroup => (
+                <div key={wordGroup.id} className="flex items-center gap-1 sm:gap-1.5 flex-nowrap shrink-0">
+                  {wordGroup.slots.map(slot => {
+                    if (slot.isSeparator) {
+                      return (
+                        <div key={slot.id} className="flex items-center justify-center px-1 text-slate-400 font-black text-lg select-none">
+                          -
+                        </div>
+                      );
+                    }
 
-                return (
-                  <div
-                    key={idx}
-                    className={`w-9 h-12 sm:w-11 sm:h-14 rounded-xl border-b-4 flex items-center justify-center font-black text-xl transition-all ${
-                      isRevealed
-                        ? isWon
-                          ? 'bg-emerald-500 text-white border-emerald-700'
-                          : isMissed
-                          ? 'bg-rose-500/20 text-rose-600 border-rose-500'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white border-slate-300 dark:border-slate-600'
-                        : 'bg-slate-50 dark:bg-slate-900 border-slate-400 dark:border-slate-700'
-                    }`}
-                  >
-                    {isRevealed ? letter : <span className="w-3 h-1 bg-slate-400 rounded-full" />}
-                  </div>
-                );
-              })}
+                    const isRevealed = guessedLetters.includes(slot.normalized) || isRoundOver;
+                    const isMissed = isHanged && !guessedLetters.includes(slot.normalized);
+
+                    return (
+                      <div
+                        key={slot.id}
+                        className={`w-8 sm:w-10 h-11 sm:h-13 rounded-xl border-b-4 flex items-center justify-center font-black text-base sm:text-xl transition-all shadow-sm ${
+                          isRevealed
+                            ? isWon
+                              ? 'bg-emerald-500 text-white border-emerald-700'
+                              : isMissed
+                              ? 'bg-rose-500/20 text-rose-600 border-rose-500'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white border-slate-300 dark:border-slate-600'
+                            : 'bg-slate-50 dark:bg-slate-900 border-slate-400 dark:border-slate-700'
+                        }`}
+                      >
+                        {isRevealed ? slot.char : <span className="w-3 h-1 bg-slate-400 rounded-full" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
 
             {/* Feedback / Result Banner */}
