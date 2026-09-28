@@ -52,13 +52,15 @@ export function initUnoGame(players: Player[]): UnoGameState {
     deckIndex += 7;
   }
 
-  // Encontra a primeira carta válida do topo da pilha de descarte (não pode ser Coringa +4)
+  // Primeira carta da mesa: deve ser uma carta numérica colorida (0-9) para início justo e limpo sem bloqueios
   let firstCardIndex = deckIndex;
-  while (firstCardIndex < fullDeck.length && fullDeck[firstCardIndex].value === 'wild_draw4') {
+  while (firstCardIndex < fullDeck.length) {
+    const candidate = fullDeck[firstCardIndex];
+    if (candidate.color !== 'wild' && !['skip', 'reverse', 'draw2', 'wild', 'wild_draw4'].includes(candidate.value)) {
+      break;
+    }
     firstCardIndex++;
   }
-
-  // Se chegou ao fim (muito raro), pega a primeira não-wild
   if (firstCardIndex >= fullDeck.length) {
     firstCardIndex = deckIndex;
   }
@@ -66,9 +68,8 @@ export function initUnoGame(players: Player[]): UnoGameState {
   const topCard = fullDeck[firstCardIndex];
   const remainingDeck = fullDeck.filter((_, idx) => idx >= deckIndex && idx !== firstCardIndex);
 
-  // Define a cor inicial (se a primeira carta for Coringa simples, escolhe Vermelho por padrão)
+  // Cor inicial garantida da carta numérica
   const initialColor: UnoColor = topCard.color === 'wild' ? 'red' : topCard.color;
-
   const currentTurnPlayerId = players[0]?.id || '';
 
   const state: UnoGameState = {
@@ -86,39 +87,9 @@ export function initUnoGame(players: Player[]): UnoGameState {
       playerName: 'Mesa',
       action: 'play',
       card: topCard,
-      message: `Partida iniciada! Carta inicial: ${topCard.color === 'wild' ? 'Coringa' : UNO_COLOR_NAMES[topCard.color]} ${topCard.value.toUpperCase()}`
+      message: `Partida iniciada! Carta inicial: ${UNO_COLOR_NAMES[topCard.color] || topCard.color} ${topCard.value.toUpperCase()}`
     }
   };
-
-  // Se a primeira carta do descarte tiver ação especial
-  if (topCard.value === 'skip') {
-    // Pula o primeiro jogador
-    const nextIdx = getNextUnoPlayerIndex(0, players.length, 1, 1);
-    state.currentTurnPlayerId = players[nextIdx]?.id || '';
-    state.lastAction!.message += ' (Primeiro jogador pulado!)';
-  } else if (topCard.value === 'reverse') {
-    if (players.length === 2) {
-      // Em 2 jogadores, Inverter age como Bloqueio
-      const nextIdx = getNextUnoPlayerIndex(0, players.length, 1, 1);
-      state.currentTurnPlayerId = players[nextIdx]?.id || '';
-    } else {
-      state.direction = -1;
-      const nextIdx = getNextUnoPlayerIndex(0, players.length, -1, 1);
-      state.currentTurnPlayerId = players[nextIdx]?.id || '';
-    }
-    state.lastAction!.message += ' (Sentido invertido!)';
-  } else if (topCard.value === 'draw2') {
-    // O primeiro jogador compra 2 cartas e perde a vez
-    const targetPlayer = players[0];
-    if (targetPlayer) {
-      ensureDrawDeck(state);
-      const drawn = state.drawDeck.splice(0, 2);
-      state.hands[targetPlayer.id].push(...drawn);
-      const nextIdx = getNextUnoPlayerIndex(0, players.length, 1, 1);
-      state.currentTurnPlayerId = players[nextIdx]?.id || '';
-      state.lastAction!.message += ` (${targetPlayer.name} comprou +2 e perdeu a vez!)`;
-    }
-  }
 
   return state;
 }
@@ -133,8 +104,11 @@ export function playUnoCardAction(
   cardId: string,
   chosenColor?: UnoColor
 ): { success: boolean; message?: string; isGameOver?: boolean } {
-  if (state.winnerId) {
+  if (state.winnerId && state.hands[state.winnerId] && state.hands[state.winnerId].length === 0) {
     return { success: false, message: 'A rodada já terminou!' };
+  } else if (state.winnerId) {
+    delete state.winnerId;
+    delete state.roundScores;
   }
 
   if (state.currentTurnPlayerId !== playerId) {
@@ -300,7 +274,12 @@ export function drawUnoCardAction(
   players: Player[],
   playerId: string
 ): { success: boolean; drawnCard?: UnoCard; canPlay?: boolean; message?: string } {
-  if (state.winnerId) return { success: false, message: 'A rodada já terminou!' };
+  if (state.winnerId && state.hands[state.winnerId] && state.hands[state.winnerId].length === 0) {
+    return { success: false, message: 'A rodada já terminou!' };
+  } else if (state.winnerId) {
+    delete state.winnerId;
+    delete state.roundScores;
+  }
   if (state.currentTurnPlayerId !== playerId) return { success: false, message: 'Não é sua vez!' };
   if (state.hasDrawnThisTurn) return { success: false, message: 'Você já comprou nesta rodada! Jogue ou passe a vez.' };
 
@@ -341,7 +320,12 @@ export function passUnoTurnAction(
   playerId: string,
   force = false
 ): { success: boolean; message?: string } {
-  if (state.winnerId) return { success: false, message: 'A rodada já terminou!' };
+  if (state.winnerId && state.hands[state.winnerId] && state.hands[state.winnerId].length === 0) {
+    return { success: false, message: 'A rodada já terminou!' };
+  } else if (state.winnerId) {
+    delete state.winnerId;
+    delete state.roundScores;
+  }
   if (state.currentTurnPlayerId !== playerId) return { success: false, message: 'Não é sua vez!' };
 
   const player = players.find(p => p.id === playerId);

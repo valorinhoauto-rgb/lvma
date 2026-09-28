@@ -45,7 +45,9 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   const [showSettings, setShowSettings] = useState(false);
   const [showForcaDuoModal, setShowForcaDuoModal] = useState(false);
 
-  const isHost = room.hostId === currentUserId;
+  const isHost =
+    room.hostId === currentUserId ||
+    room.players.filter((p) => !p.isBot && !p.id.startsWith('bot_')).length <= 1;
 
   const currentJuiceTheme =
     JUICE_THEMES.find((t) => t.id === (room.settings.juiceTheme || 'brasil_geral')) || JUICE_THEMES[0];

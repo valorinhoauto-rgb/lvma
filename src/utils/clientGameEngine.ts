@@ -52,6 +52,15 @@ class ClientGameEngine {
   private myPlayerId: string | null = null;
   private isAdvancingRound: boolean = false;
 
+  public getIsHost(): boolean {
+    if (this.isHost) return true;
+    if (!this.activeRoom) return true;
+    if (this.myPlayerId && this.activeRoom.hostId === this.myPlayerId) return true;
+    const humanPlayers = this.activeRoom.players.filter(p => !p.isBot && !p.id.startsWith('bot_'));
+    if (humanPlayers.length <= 1) return true;
+    return false;
+  }
+
   public subscribe(cb: (room: RoomState) => void) {
     this.listeners.add(cb);
     if (this.activeRoom) cb(this.activeRoom);
@@ -86,7 +95,7 @@ class ClientGameEngine {
       const roomRef = doc(db, 'rooms', roomState.roomId);
       // Clean undefined fields for Firestore
       const cleanState = JSON.parse(JSON.stringify(roomState));
-      await setDoc(roomRef, cleanState, { merge: true });
+      await setDoc(roomRef, cleanState);
     } catch (err) {
       console.warn('Firestore room sync error:', err);
     }
@@ -184,6 +193,18 @@ class ClientGameEngine {
           const roundChanged = prevRoundIndex !== remoteState.currentRoundIndex;
           prevStatus = remoteState.status;
           prevRoundIndex = remoteState.currentRoundIndex;
+
+          if (remoteState.currentRound?.unoState) {
+            const uState = remoteState.currentRound.unoState;
+            // Validação de integridade do UNO: se winnerId existe mas a mão não está vazia, é resíduo de rodada anterior
+            if (uState.winnerId && uState.hands && uState.hands[uState.winnerId]) {
+              const winnerHand = uState.hands[uState.winnerId];
+              if (Array.isArray(winnerHand) && winnerHand.length > 0) {
+                delete (uState as any).winnerId;
+                delete (uState as any).roundScores;
+              }
+            }
+          }
 
           this.activeRoom = remoteState;
           if (this.myPlayerId) {
@@ -306,7 +327,7 @@ class ClientGameEngine {
             isReady: true
           });
           const cleanState = JSON.parse(JSON.stringify(remoteState));
-          await setDoc(roomRef, cleanState, { merge: true });
+          await setDoc(roomRef, cleanState);
         }
         this.activeRoom = remoteState;
         this.isHost = remoteState.hostId === player.id;
@@ -481,6 +502,8 @@ class ClientGameEngine {
       }
 
       const unoState = initUnoGame(this.activeRoom.players);
+      delete (unoState as any).winnerId;
+      delete (unoState as any).roundScores;
       const now = Date.now();
       round = {
         roundNumber,
@@ -657,7 +680,7 @@ class ClientGameEngine {
         roundScore: player.roundScore
       });
 
-      if (this.isHost) {
+      if (this.getIsHost()) {
         const allAnswered = this.activeRoom.players.every(p => p.hasAnswered);
         if (allAnswered && !this.isAdvancingRound) {
           this.isAdvancingRound = true;
@@ -764,7 +787,7 @@ class ClientGameEngine {
         roundScore: player.roundScore
       });
 
-      if (this.isHost) {
+      if (this.getIsHost()) {
         if (isFirstWinner) {
           // Encerrar a rodada imediatamente quando o primeiro jogador acertar!
           this.clearTimers();
@@ -921,7 +944,7 @@ class ClientGameEngine {
       });
 
       // Em ambos os casos, a rodada continua até TODOS terminarem!
-      if (this.isHost) {
+      if (this.getIsHost()) {
         const allFinished = this.activeRoom.players.every(p => {
           const ans = this.activeRoom!.roundAnswers[p.id];
           return p.hasAnswered || (ans && (ans.forcaWon || (ans.forcaWrongCount || 0) >= 6));
@@ -977,7 +1000,7 @@ class ClientGameEngine {
       roundScore: player.roundScore
     });
 
-    if (this.isHost) {
+    if (this.getIsHost()) {
       const allAnswered = this.activeRoom.players.every(p => p.hasAnswered);
       if (allAnswered && !this.isAdvancingRound) {
         this.isAdvancingRound = true;
@@ -993,7 +1016,7 @@ class ClientGameEngine {
   }
 
   public handleRoundTimeUp() {
-    if (!this.isHost) return;
+    if (!this.getIsHost()) return;
     this.clearTimers();
     this.isAdvancingRound = false;
     if (!this.activeRoom) return;
@@ -1070,7 +1093,7 @@ class ClientGameEngine {
   }
 
   public concludeVoting() {
-    if (!this.isHost) return;
+    if (!this.getIsHost()) return;
     this.clearTimers();
     if (!this.activeRoom || this.activeRoom.status !== 'round_voting') return;
 
@@ -1090,7 +1113,7 @@ class ClientGameEngine {
   }
 
   public endRound() {
-    if (!this.isHost) return;
+    if (!this.getIsHost()) return;
     this.clearTimers();
     if (!this.activeRoom) return;
 
@@ -1150,7 +1173,7 @@ class ClientGameEngine {
   }
 
   public nextRound() {
-    if (!this.activeRoom || !this.isHost) return null;
+    if (!this.activeRoom || !this.getIsHost()) return null;
     this.activeRoom.currentRoundIndex++;
 
     if (this.activeRoom.currentRoundIndex >= this.activeRoom.settings.totalRounds) {
@@ -1165,7 +1188,7 @@ class ClientGameEngine {
   }
 
   public resetToLobby() {
-    if (!this.activeRoom || !this.isHost) return null;
+    if (!this.activeRoom || !this.getIsHost()) return null;
     this.clearTimers();
     this.activeRoom.status = 'lobby';
     this.activeRoom.currentRoundIndex = 0;
@@ -1216,7 +1239,7 @@ class ClientGameEngine {
     const res = playUnoCardAction(unoState, this.activeRoom.players, playerId, cardId, chosenColor);
     if (!res.success) return null;
 
-    if (res.isGameOver && this.isHost) {
+    if (res.isGameOver) {
       this.finishUnoRound();
       return this.activeRoom;
     }
@@ -1225,7 +1248,7 @@ class ClientGameEngine {
     this.notify('room:update', { room: this.activeRoom });
     this.syncToFirestore(this.activeRoom);
 
-    if (this.isHost) {
+    if (this.getIsHost()) {
       this.triggerBotUnoTurnIfNeeded();
     }
     return this.activeRoom;
@@ -1253,7 +1276,7 @@ class ClientGameEngine {
     this.notify('room:update', { room: this.activeRoom });
     this.syncToFirestore(this.activeRoom);
 
-    if (this.isHost) {
+    if (this.getIsHost()) {
       this.triggerBotUnoTurnIfNeeded();
     }
     return this.activeRoom;
@@ -1283,7 +1306,7 @@ class ClientGameEngine {
     return this.activeRoom;
   }
 
-  private finishUnoRound() {
+  public finishUnoRound() {
     if (!this.activeRoom || !this.activeRoom.currentRound?.unoState) return;
     const unoState = this.activeRoom.currentRound.unoState;
     const winnerId = unoState.winnerId;
@@ -1311,10 +1334,16 @@ class ClientGameEngine {
       player.hasAnswered = true;
     }
 
+    // Notifica imediatamente a vitória com o vencedor e estado atualizado
+    this.activeRoom = this.cloneUnoRoomState(this.activeRoom);
+    this.notify('room:update', { room: this.activeRoom });
+    this.syncToFirestore(this.activeRoom);
+
     this.clearTimers();
+    // Fallback de 6 segundos para avanço automático caso o jogador não clique no botão manual
     this.timerHandle = setTimeout(() => {
       this.endRound();
-    }, 1500);
+    }, 6000);
   }
 
   public setMyPlayerId(playerId: string) {

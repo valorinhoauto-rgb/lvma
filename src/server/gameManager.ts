@@ -262,6 +262,8 @@ export class Room {
       }
 
       const unoState = initUnoGame(this.state.players);
+      delete (unoState as any).winnerId;
+      delete (unoState as any).roundScores;
       const now = Date.now();
       round = {
         roundNumber,

@@ -23,7 +23,9 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
   onNextRound
 }) => {
   const round = room.currentRound;
-  const isHost = room.hostId === currentUserId;
+  const isHost =
+    room.hostId === currentUserId ||
+    room.players.filter(p => !p.isBot && !p.id.startsWith('bot_')).length <= 1;
   const myAnswer: PlayerAnswer | undefined = room.roundAnswers[currentUserId];
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
 
   if (!round) return null;
 
-  const isLastRound = room.currentRoundIndex >= room.settings.totalRounds;
+  const isLastRound = round.roundNumber >= room.settings.totalRounds;
 
   const handleManualCelebration = () => {
     sound.playVictory();

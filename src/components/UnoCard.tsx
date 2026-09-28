@@ -89,9 +89,9 @@ export const UnoCardComponent: React.FC<UnoCardProps> = memo(({
 
   return (
     <motion.div
-      whileHover={onClick && isPlayable && !disabled ? { scale: 1.1, y: -10, zIndex: 40 } : undefined}
-      whileTap={onClick && isPlayable && !disabled ? { scale: 0.95 } : undefined}
-      onClick={isPlayable && !disabled ? onClick : undefined}
+      whileHover={onClick && !disabled ? { scale: isPlayable ? 1.1 : 1.04, y: isPlayable ? -10 : -4, zIndex: 40 } : undefined}
+      whileTap={onClick && !disabled ? { scale: 0.95 } : undefined}
+      onClick={!disabled ? onClick : undefined}
       style={{
         transform: rotation ? `rotate(${rotation}deg)` : undefined
       }}
@@ -100,6 +100,8 @@ export const UnoCardComponent: React.FC<UnoCardProps> = memo(({
           ? 'cursor-pointer ring-4 ring-amber-400 ring-offset-2 ring-offset-slate-950 rounded-xl sm:rounded-2xl shadow-xl shadow-amber-500/30 hover:shadow-2xl'
           : disabled
           ? 'cursor-not-allowed opacity-50'
+          : onClick
+          ? 'cursor-pointer opacity-75 hover:opacity-90'
           : 'cursor-default opacity-85'
       } ${isSelected ? 'ring-4 ring-emerald-400 scale-105' : ''} ${className}`}
     >

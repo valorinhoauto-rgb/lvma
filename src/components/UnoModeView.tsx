@@ -74,7 +74,14 @@ export const UnoModeView: React.FC<UnoModeViewProps> = ({
     lastAction
   } = unoState;
 
-  const isMyTurn = currentTurnPlayerId === currentUserId;
+  const [hintMessage, setHintMessage] = useState<string | null>(null);
+
+  const isRoundOver = Boolean(
+    unoState.winnerId &&
+    Array.isArray(hands[unoState.winnerId]) &&
+    hands[unoState.winnerId].length === 0
+  );
+  const isMyTurn = !isRoundOver && currentTurnPlayerId === currentUserId;
   const myHand = hands[currentUserId] || [];
   const myPlayer = players.find(p => p.id === currentUserId);
   const opponents = players.filter(p => p.id !== currentUserId);
@@ -83,8 +90,12 @@ export const UnoModeView: React.FC<UnoModeViewProps> = ({
   const drawnCard = drawnCardId ? myHand.find(c => c.id === drawnCardId) : undefined;
   const canPlayDrawnCard = drawnCard ? isValidUnoMove(drawnCard, topCard, currentColor) : false;
 
+  // Verifica se o jogador possui ao menos uma carta jogável na mão
+  const hasAnyPlayableCard = myHand.some(card => isValidUnoMove(card, topCard, currentColor));
+
   // Jogador atual da rodada
   const activeTurnPlayer = players.find(p => p.id === currentTurnPlayerId);
+  const winnerPlayer = (unoState.winnerId && isRoundOver) ? players.find(p => p.id === unoState.winnerId) : undefined;
 
   // Som de distribuição de cartas ao carregar a partida
   useEffect(() => {
@@ -102,10 +113,10 @@ export const UnoModeView: React.FC<UnoModeViewProps> = ({
 
   // Vitória sonora quando alguém bate no UNO
   useEffect(() => {
-    if (unoState.winnerId) {
+    if (unoState.winnerId && isRoundOver) {
       sound.playVictoryToken();
     }
-  }, [unoState.winnerId]);
+  }, [unoState.winnerId, isRoundOver]);
 
   // Efeitos sonoros contextuais quando um INIMIGO / OPONENTE joga carta ou executa ação
   const prevActionRef = useRef<typeof lastAction | undefined>(undefined);
@@ -155,7 +166,7 @@ export const UnoModeView: React.FC<UnoModeViewProps> = ({
   // Orquestrador e Watchdog de segurança da UI: garante que a IA dos bots nunca fique travada
   useEffect(() => {
     const isBotTurn = Boolean(activeTurnPlayer?.isBot || currentTurnPlayerId.startsWith('bot_'));
-    if (!isBotTurn || unoState.winnerId) return;
+    if (!isBotTurn || isRoundOver) return;
 
     // Dispara a rotina de turno do bot imediatamente com executor definido
     clientGameEngine.setMyPlayerId(currentUserId);
@@ -163,23 +174,36 @@ export const UnoModeView: React.FC<UnoModeViewProps> = ({
 
     // Watchdog de segurança da UI: se por qualquer razão externa o turno persistir, força a execução
     const watchdog = setTimeout(() => {
-      if (unoState.currentTurnPlayerId === currentTurnPlayerId && !unoState.winnerId) {
+      if (unoState.currentTurnPlayerId === currentTurnPlayerId && !isRoundOver) {
         console.warn('UI Watchdog: bot demorou para jogar, reativando rotina de turno');
         clientGameEngine.triggerBotUnoTurnIfNeeded(currentUserId);
       }
     }, 2200);
 
     return () => clearTimeout(watchdog);
-  }, [currentTurnPlayerId, activeTurnPlayer?.isBot, unoState.winnerId, currentUserId]);
+  }, [currentTurnPlayerId, activeTurnPlayer?.isBot, isRoundOver, currentUserId]);
 
   // Manipula clique em uma carta da mão
   const handleCardClick = (card: UnoCard) => {
-    if (!isMyTurn) return;
+    if (isRoundOver) return;
+
+    if (!isMyTurn) {
+      sound.playError();
+      setHintMessage(`Aguarde sua vez! Agora é a vez de ${activeTurnPlayer?.name || 'outro jogador'}.`);
+      setTimeout(() => setHintMessage(null), 3000);
+      return;
+    }
 
     if (!isValidUnoMove(card, topCard, currentColor)) {
       sound.playError();
+      const colorName = UNO_COLOR_NAMES[currentColor] || currentColor;
+      const topValName = topCard.color === 'wild' ? 'Coringa' : `${topCard.value.toUpperCase()}`;
+      setHintMessage(`Esta carta não pode ser jogada agora! Escolha uma carta ${colorName} ou ${topValName}, ou compre do baralho.`);
+      setTimeout(() => setHintMessage(null), 3500);
       return;
     }
+
+    setHintMessage(null);
 
     // Se for Coringa ou Coringa +4, abre o modal de escolha de cor
     if (card.color === 'wild' || card.value === 'wild' || card.value === 'wild_draw4') {
@@ -216,7 +240,20 @@ export const UnoModeView: React.FC<UnoModeViewProps> = ({
 
   // Compra carta do baralho
   const handleDrawClick = () => {
-    if (!isMyTurn || hasDrawnThisTurn) return;
+    if (isRoundOver) return;
+    if (!isMyTurn) {
+      sound.playError();
+      setHintMessage(`Aguarde sua vez! Agora é a vez de ${activeTurnPlayer?.name || 'outro jogador'}.`);
+      setTimeout(() => setHintMessage(null), 3000);
+      return;
+    }
+    if (hasDrawnThisTurn) {
+      sound.playError();
+      setHintMessage('Você já comprou nesta rodada! Jogue a carta comprada ou passe a vez.');
+      setTimeout(() => setHintMessage(null), 3000);
+      return;
+    }
+    setHintMessage(null);
     sound.playCardDraw();
     onDrawCard();
   };
@@ -261,7 +298,14 @@ export const UnoModeView: React.FC<UnoModeViewProps> = ({
 
         {/* Indicador central de Turno */}
         <div className="flex items-center gap-2">
-          {isMyTurn ? (
+          {isRoundOver ? (
+            <div className="flex items-center gap-2 bg-amber-500/25 border border-amber-400 px-3.5 py-1.5 rounded-xl shadow-lg shadow-amber-500/20">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+              <span className="text-xs sm:text-sm font-black text-amber-300 uppercase tracking-wider">
+                🏆 {unoState.winnerId === currentUserId ? 'VOCÊ BATEU E VENCEU!' : `${winnerPlayer?.name || 'Adversário'} Venceu!`}
+              </span>
+            </div>
+          ) : isMyTurn ? (
             <div className="flex items-center gap-2 bg-emerald-500/20 border border-emerald-400 px-3.5 py-1.5 rounded-xl shadow-lg shadow-emerald-500/20 animate-pulse">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
               <span className="text-xs sm:text-sm font-black text-emerald-300 uppercase tracking-wider">
@@ -533,6 +577,38 @@ export const UnoModeView: React.FC<UnoModeViewProps> = ({
       {/* BASE: MÃO DO JOGADOR + BOTÃO GRITAR UNO */}
       {/* ================================================================= */}
       <div className="relative z-20 flex flex-col items-center">
+        {/* Banner de Feedback/Dica Contextual */}
+        {hintMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mb-2 px-4 py-1.5 bg-rose-950/90 border border-rose-500/70 rounded-xl text-xs font-bold text-rose-200 shadow-xl text-center max-w-lg"
+          >
+            {hintMessage}
+          </motion.div>
+        )}
+
+        {/* Alerta Proativo: Quando é a vez do jogador e nenhuma carta combina */}
+        {isMyTurn && !hasDrawnThisTurn && !hasAnyPlayableCard && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-2 px-4 py-2.5 bg-amber-500/20 border-2 border-amber-400 rounded-2xl flex items-center justify-between gap-3 shadow-2xl max-w-lg w-full"
+          >
+            <div className="flex items-center gap-2 text-xs font-bold text-amber-200">
+              <span className="text-base">💡</span>
+              <span>Nenhuma carta combina com a mesa. Compre do baralho para continuar!</span>
+            </div>
+            <button
+              onClick={handleDrawClick}
+              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl shadow-lg transition-all active:scale-95 cursor-pointer whitespace-nowrap animate-bounce"
+            >
+              Comprar Carta 📥
+            </button>
+          </motion.div>
+        )}
+
         {/* Barra de Ações Rápidas do Jogador */}
         <div className="w-full flex items-center justify-between mb-2 px-2">
           <div className="flex items-center gap-2">
@@ -732,6 +808,48 @@ export const UnoModeView: React.FC<UnoModeViewProps> = ({
               >
                 Entendi, Voltar ao Jogo
               </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ================================================================= */}
+      {/* OVERLAY DE VITÓRIA / FIM DA RODADA DE UNO */}
+      {/* ================================================================= */}
+      <AnimatePresence>
+        {isRoundOver && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              className="bg-slate-900 border-2 border-amber-400 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-4 shadow-2xl"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <img src="/assets/uno/logo.svg" alt="UNO Logo" className="h-10 object-contain drop-shadow" />
+              </div>
+              <div className="text-4xl animate-bounce">👑 🎉</div>
+              <h2 className="text-2xl sm:text-3xl font-black text-white font-['Outfit']">
+                {unoState.winnerId === currentUserId ? 'VOCÊ BATEU NO UNO!' : `${winnerPlayer?.name || 'Adversário'} BATEU NO UNO!`}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300">
+                {unoState.winnerId === currentUserId
+                  ? 'Parabéns! Você descartou todas as suas cartas e venceu a rodada!'
+                  : `${winnerPlayer?.name || 'O adversário'} descartou todas as cartas e venceu esta rodada.`}
+              </p>
+              <div className="pt-2">
+                <button
+                  id="btn-uno-view-results"
+                  onClick={() => {
+                    sound.playClick();
+                    clientGameEngine.endRound();
+                  }}
+                  className="w-full py-4 px-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-base sm:text-lg rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                >
+                  <span>AVANÇAR PARA OS RESULTADOS</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
