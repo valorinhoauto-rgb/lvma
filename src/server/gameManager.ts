@@ -10,6 +10,15 @@ import { getRandomJuicePhoto, validateJuiceGuess, validateJuiceGuessDetailed } f
 import { getRandomForcaChallenge, normalizeForcaString } from '../data/forcaWords.ts';
 import { getAlternatingTermoLength, getRandomTermoTarget, isValidTermoWord } from '../data/termoDictionary.ts';
 import {
+  initUnoGame,
+  playUnoCardAction,
+  drawUnoCardAction,
+  passUnoTurnAction,
+  callUnoAction,
+  catchUnoAction
+} from '../data/unoEngine.ts';
+import { chooseBotUnoMove, getNextUnoPlayerIndex } from '../data/unoDeck.ts';
+import {
   GameMode,
   JuiceGuessResult,
   Player,
@@ -18,6 +27,7 @@ import {
   RoomState,
   RoundConfig,
   TermoGuessResult,
+  UnoColor,
   WordEntry
 } from '../types.ts';
 import { wordEngine } from './wordEngine.ts';
@@ -225,6 +235,47 @@ export class Room {
         playerForcaChallenges: playerChallenges
       };
       this.possibleCurrentWords = [];
+    } else if (gameMode === 'uno') {
+      // Modo UNO (Regras Oficiais com 108 cartas e suporte a Bots)
+      const botCount = this.state.settings.unoBotsCount ?? (this.state.players.length === 1 ? 2 : 0);
+      const BOT_NAMES = ['Bot Lucas', 'Bot Sofia', 'Bot Gabriel', 'Bot Laura'];
+      const currentBotCount = this.state.players.filter(p => p.isBot).length;
+
+      if (currentBotCount < botCount) {
+        for (let i = currentBotCount; i < botCount; i++) {
+          const botId = `bot_uno_${i + 1}`;
+          if (!this.state.players.some(p => p.id === botId)) {
+            this.state.players.push({
+              id: botId,
+              name: BOT_NAMES[i % BOT_NAMES.length],
+              avatar: `bot_${i + 1}`,
+              avatarColor: '#38bdf8',
+              isHost: false,
+              isBot: true,
+              score: 0,
+              roundScore: 0,
+              hasAnswered: false,
+              isReady: true
+            });
+          }
+        }
+      }
+
+      const unoState = initUnoGame(this.state.players);
+      const now = Date.now();
+      round = {
+        roundNumber,
+        totalRounds: this.state.settings.totalRounds,
+        letter: 'U',
+        categoryId: 'uno',
+        categoryName: 'UNO Clássico',
+        wordLength: 0,
+        timeLimit: 0,
+        startedAt: now,
+        endsAt: 0,
+        unoState
+      };
+      this.possibleCurrentWords = [];
     } else {
       // Modo STOP + TERMO Clássico com garantia de palavras válidas
       const comb = wordEngine.getRandomCombination({
@@ -271,12 +322,21 @@ export class Room {
     });
     this.broadcastState();
 
-    // Schedule authoritative round end (exceto no modo termo_multiplayer ou forca com tempo livre)
-    if (this.state.settings.gameMode !== 'termo_multiplayer' && this.state.settings.gameMode !== 'forca' && round.timeLimit > 0) {
+    // Schedule authoritative round end (exceto nos modos por turnos / dedução livre)
+    if (
+      this.state.settings.gameMode !== 'termo_multiplayer' &&
+      this.state.settings.gameMode !== 'forca' &&
+      this.state.settings.gameMode !== 'uno' &&
+      round.timeLimit > 0
+    ) {
       const durationMs = (round.timeLimit * 1000) + 500;
       this.timerHandle = setTimeout(() => {
         this.handleRoundTimeUp();
       }, durationMs);
+    }
+
+    if (this.state.settings.gameMode === 'uno') {
+      this.triggerBotUnoTurnIfNeeded();
     }
   }
 
@@ -752,7 +812,12 @@ export class Room {
         continue;
       }
 
-      if (this.state.settings.gameMode === 'termo_multiplayer' || this.state.settings.gameMode === 'juice_photo' || this.state.settings.gameMode === 'forca') {
+      if (
+        this.state.settings.gameMode === 'termo_multiplayer' ||
+        this.state.settings.gameMode === 'juice_photo' ||
+        this.state.settings.gameMode === 'forca' ||
+        this.state.settings.gameMode === 'uno'
+      ) {
         // Já calculado no submitAnswer
         player.roundScore = ans.points;
         player.score += ans.points;
@@ -843,6 +908,204 @@ export class Room {
       p.hasAnswered = false;
     }
     this.broadcastState();
+  }
+
+  // =========================================================================
+  // MÉTODOS DO JOGO UNO (Jogar, Comprar, Passar, Gritar UNO, Denunciar, Bots)
+  // =========================================================================
+
+  public playUnoCard(playerId: string, cardId: string, chosenColor?: UnoColor) {
+    if (!this.state.currentRound?.unoState) return { success: false };
+    const unoState = this.state.currentRound.unoState;
+    const res = playUnoCardAction(unoState, this.state.players, playerId, cardId, chosenColor);
+    if (!res.success) return res;
+
+    if (res.isGameOver) {
+      this.finishUnoRound();
+      return { success: true };
+    }
+
+    this.broadcastState();
+    this.triggerBotUnoTurnIfNeeded();
+    return { success: true };
+  }
+
+  public drawUnoCard(playerId: string) {
+    if (!this.state.currentRound?.unoState) return { success: false };
+    const unoState = this.state.currentRound.unoState;
+    const res = drawUnoCardAction(unoState, this.state.players, playerId);
+    if (!res.success) return res;
+
+    this.broadcastState();
+    return res;
+  }
+
+  public passUnoTurn(playerId: string) {
+    if (!this.state.currentRound?.unoState) return { success: false };
+    const unoState = this.state.currentRound.unoState;
+    const res = passUnoTurnAction(unoState, this.state.players, playerId);
+    if (!res.success) return res;
+
+    this.broadcastState();
+    this.triggerBotUnoTurnIfNeeded();
+    return { success: true };
+  }
+
+  public callUno(playerId: string) {
+    if (!this.state.currentRound?.unoState) return { success: false };
+    const unoState = this.state.currentRound.unoState;
+    const res = callUnoAction(unoState, this.state.players, playerId);
+    if (!res.success) return res;
+
+    this.broadcastState();
+    return { success: true };
+  }
+
+  public catchUno(reporterId: string, targetId: string) {
+    if (!this.state.currentRound?.unoState) return { success: false };
+    const unoState = this.state.currentRound.unoState;
+    const res = catchUnoAction(unoState, this.state.players, reporterId, targetId);
+    if (!res.success) return res;
+
+    this.broadcastState();
+    return { success: true };
+  }
+
+  private finishUnoRound() {
+    if (!this.state.currentRound?.unoState) return;
+    const unoState = this.state.currentRound.unoState;
+    const winnerId = unoState.winnerId;
+
+    for (const player of this.state.players) {
+      const isWinner = player.id === winnerId;
+      const cardsRemaining = unoState.hands[player.id]?.length || 0;
+      const pts = isWinner ? (unoState.roundScores?.[player.id] || 100) : 0;
+
+      this.state.roundAnswers[player.id] = {
+        playerId: player.id,
+        playerName: player.name,
+        rawAnswer: isWinner ? 'BATEU NO UNO!' : `${cardsRemaining} cartas restantes`,
+        normalizedAnswer: isWinner ? 'VENCEDOR' : 'RESTANTE',
+        isValid: isWinner,
+        inDictionary: true,
+        isCommunityApproved: false,
+        votes: { yes: 0, no: 0, voterIds: {} },
+        responseTimeMs: 0,
+        points: pts,
+        unoCardsLeft: cardsRemaining,
+        unoScore: pts,
+        unoWinner: isWinner
+      };
+      player.hasAnswered = true;
+    }
+
+    this.clearAllTimers();
+    this.timerHandle = setTimeout(() => {
+      this.endRound();
+    }, 1500);
+  }
+
+  public triggerBotUnoTurnIfNeeded() {
+    if (!this.state.currentRound?.unoState) return;
+    const unoState = this.state.currentRound.unoState;
+    if (unoState.winnerId) return;
+
+    const currentTurnId = unoState.currentTurnPlayerId;
+    const currentPlayer = this.state.players.find(p => p.id === currentTurnId);
+    const isBot = Boolean(currentPlayer?.isBot || currentTurnId.startsWith('bot_'));
+    if (!isBot) return;
+
+    setTimeout(() => {
+      if (!this.state.currentRound?.unoState) return;
+      const state = this.state.currentRound.unoState;
+      if (state.winnerId || state.currentTurnPlayerId !== currentTurnId) return;
+
+      try {
+        state.hands[currentTurnId] = state.hands[currentTurnId] || [];
+        const botHand = state.hands[currentTurnId];
+
+        // 1. Bot tem 1 carta e não chamou UNO: chama agora!
+        if (botHand.length === 1 && !state.unoCalled[currentTurnId]) {
+          callUnoAction(state, this.state.players, currentTurnId);
+        }
+
+        // 2. Chance de denunciar oponente que esqueceu de gritar UNO
+        for (const opp of this.state.players) {
+          if (opp.id !== currentTurnId && (state.hands[opp.id]?.length === 1) && !state.unoCalled[opp.id]) {
+            if (Math.random() < 0.6) {
+              catchUnoAction(state, this.state.players, currentTurnId, opp.id);
+              break;
+            }
+          }
+        }
+
+        // 3. Escolhe jogada com a IA inteligente de UNO
+        const move = chooseBotUnoMove(botHand, state.topCard, state.currentColor);
+        if (move) {
+          if (botHand.length === 2) {
+            state.unoCalled[currentTurnId] = true;
+          }
+          const res = playUnoCardAction(state, this.state.players, currentTurnId, move.card.id, move.chosenColor);
+          if (res.isGameOver) {
+            this.finishUnoRound();
+            return;
+          }
+          if (!res.success) {
+            if (state.hasDrawnThisTurn) {
+              passUnoTurnAction(state, this.state.players, currentTurnId, true);
+            } else {
+              const drawRes = drawUnoCardAction(state, this.state.players, currentTurnId);
+              if (!drawRes.success || !drawRes.canPlay) {
+                passUnoTurnAction(state, this.state.players, currentTurnId, true);
+              }
+            }
+          }
+        } else {
+          if (state.hasDrawnThisTurn) {
+            passUnoTurnAction(state, this.state.players, currentTurnId, true);
+          } else {
+            const drawRes = drawUnoCardAction(state, this.state.players, currentTurnId);
+            if (drawRes.success && drawRes.canPlay && drawRes.drawnCard) {
+              let chosenColor: UnoColor | undefined = undefined;
+              if (
+                drawRes.drawnCard.color === 'wild' ||
+                drawRes.drawnCard.value === 'wild' ||
+                drawRes.drawnCard.value === 'wild_draw4'
+              ) {
+                chosenColor = 'red';
+              }
+              const playRes = playUnoCardAction(state, this.state.players, currentTurnId, drawRes.drawnCard.id, chosenColor);
+              if (playRes.isGameOver) {
+                this.finishUnoRound();
+                return;
+              }
+              if (!playRes.success) {
+                passUnoTurnAction(state, this.state.players, currentTurnId, true);
+              }
+            } else {
+              const passRes = passUnoTurnAction(state, this.state.players, currentTurnId, true);
+              if (!passRes.success) {
+                state.hasDrawnThisTurn = false;
+                state.drawnCardId = undefined;
+                const currentIdx = this.state.players.findIndex(p => p.id === currentTurnId);
+                const nextIdx = getNextUnoPlayerIndex(currentIdx >= 0 ? currentIdx : 0, this.state.players.length, state.direction || 1, 1);
+                state.currentTurnPlayerId = this.state.players[nextIdx]?.id || '';
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Server bot Uno error, auto-advancing turn:', err);
+        state.hasDrawnThisTurn = false;
+        state.drawnCardId = undefined;
+        const currentIdx = this.state.players.findIndex(p => p.id === currentTurnId);
+        const nextIdx = getNextUnoPlayerIndex(currentIdx >= 0 ? currentIdx : 0, this.state.players.length, state.direction || 1, 1);
+        state.currentTurnPlayerId = this.state.players[nextIdx]?.id || '';
+      }
+
+      this.broadcastState();
+      this.triggerBotUnoTurnIfNeeded();
+    }, 750 + Math.random() * 500);
   }
 
   public clearAllTimers() {

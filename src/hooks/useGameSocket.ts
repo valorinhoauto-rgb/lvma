@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PlayerAnswer, RoomSettings, RoomState, UserProfile } from '../types.ts';
+import { PlayerAnswer, RoomSettings, RoomState, UnoColor, UserProfile } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 import { clientGameEngine } from '../utils/clientGameEngine.ts';
 
@@ -29,6 +29,10 @@ export function useGameSocket(userProfile: UserProfile) {
 
   // Subscribe to clientGameEngine updates
   useEffect(() => {
+    if (userProfile?.id) {
+      clientGameEngine.setMyPlayerId(userProfile.id);
+    }
+
     const unsubRoom = clientGameEngine.subscribe((updatedRoom) => {
       if (updatedRoom.kickedPlayerIds?.includes(userProfile.id)) {
         sound.playError();
@@ -148,7 +152,10 @@ export function useGameSocket(userProfile: UserProfile) {
               setChatMessages([]);
               return;
             }
-            setRoom(data.room);
+            // Apenas atualiza estado via WebSocket do servidor se NÃO estiver usando o clientGameEngine autoritativo
+            if (!useClientEngineRef.current) {
+              setRoom(data.room);
+            }
           } else if (data.event === 'round:start') {
             sound.playClick();
           } else if (data.event === 'round:voting_start') {
@@ -533,6 +540,129 @@ export function useGameSocket(userProfile: UserProfile) {
     }
   };
 
+  // =========================================================================
+  // AÇÕES DO JOGO UNO (Regras Oficiais com sincronização sem duplicidade)
+  // =========================================================================
+  const playUnoCard = (cardId: string, chosenColor?: UnoColor) => {
+    if (!room) return;
+    if (useClientEngineRef.current) {
+      const updated = clientGameEngine.playUnoCard(userProfile.id, cardId, chosenColor);
+      if (updated) setRoom({ ...updated });
+      return;
+    }
+    try {
+      fetch(`/api/rooms/${room.roomId}/uno/play`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: userProfile.id, cardId, chosenColor })
+      }).catch(() => {
+        useClientEngineRef.current = true;
+        const fallback = clientGameEngine.playUnoCard(userProfile.id, cardId, chosenColor);
+        if (fallback) setRoom({ ...fallback });
+      });
+    } catch {
+      useClientEngineRef.current = true;
+      const fallback = clientGameEngine.playUnoCard(userProfile.id, cardId, chosenColor);
+      if (fallback) setRoom({ ...fallback });
+    }
+  };
+
+  const drawUnoCard = () => {
+    if (!room) return;
+    if (useClientEngineRef.current) {
+      const updated = clientGameEngine.drawUnoCard(userProfile.id);
+      if (updated) setRoom({ ...updated });
+      return;
+    }
+    try {
+      fetch(`/api/rooms/${room.roomId}/uno/draw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: userProfile.id })
+      }).catch(() => {
+        useClientEngineRef.current = true;
+        const fallback = clientGameEngine.drawUnoCard(userProfile.id);
+        if (fallback) setRoom({ ...fallback });
+      });
+    } catch {
+      useClientEngineRef.current = true;
+      const fallback = clientGameEngine.drawUnoCard(userProfile.id);
+      if (fallback) setRoom({ ...fallback });
+    }
+  };
+
+  const passUnoTurn = () => {
+    if (!room) return;
+    if (useClientEngineRef.current) {
+      const updated = clientGameEngine.passUnoTurn(userProfile.id);
+      if (updated) setRoom({ ...updated });
+      return;
+    }
+    try {
+      fetch(`/api/rooms/${room.roomId}/uno/pass`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: userProfile.id })
+      }).catch(() => {
+        useClientEngineRef.current = true;
+        const fallback = clientGameEngine.passUnoTurn(userProfile.id);
+        if (fallback) setRoom({ ...fallback });
+      });
+    } catch {
+      useClientEngineRef.current = true;
+      const fallback = clientGameEngine.passUnoTurn(userProfile.id);
+      if (fallback) setRoom({ ...fallback });
+    }
+  };
+
+  const callUno = () => {
+    if (!room) return;
+    if (useClientEngineRef.current) {
+      const updated = clientGameEngine.callUno(userProfile.id);
+      if (updated) setRoom({ ...updated });
+      return;
+    }
+    try {
+      fetch(`/api/rooms/${room.roomId}/uno/call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: userProfile.id })
+      }).catch(() => {
+        useClientEngineRef.current = true;
+        const fallback = clientGameEngine.callUno(userProfile.id);
+        if (fallback) setRoom({ ...fallback });
+      });
+    } catch {
+      useClientEngineRef.current = true;
+      const fallback = clientGameEngine.callUno(userProfile.id);
+      if (fallback) setRoom({ ...fallback });
+    }
+  };
+
+  const catchUno = (targetPlayerId: string) => {
+    if (!room) return;
+    if (useClientEngineRef.current) {
+      const updated = clientGameEngine.catchUno(userProfile.id, targetPlayerId);
+      if (updated) setRoom({ ...updated });
+      return;
+    }
+    try {
+      fetch(`/api/rooms/${room.roomId}/uno/catch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reporterId: userProfile.id, targetId: targetPlayerId })
+      }).catch(() => {
+        useClientEngineRef.current = true;
+        const fallback = clientGameEngine.catchUno(userProfile.id, targetPlayerId);
+        if (fallback) setRoom({ ...fallback });
+      });
+    } catch {
+      useClientEngineRef.current = true;
+      const fallback = clientGameEngine.catchUno(userProfile.id, targetPlayerId);
+      if (fallback) setRoom({ ...fallback });
+    }
+  };
+
   // Leave room
   const leaveRoom = () => {
     const rId = currentRoomIdRef.current || room?.roomId;
@@ -581,6 +711,11 @@ export function useGameSocket(userProfile: UserProfile) {
       }
     },
     sendChat,
+    playUnoCard,
+    drawUnoCard,
+    passUnoTurn,
+    callUno,
+    catchUno,
     leaveRoom
   };
 }

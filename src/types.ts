@@ -2,7 +2,49 @@
  * Types and Interfaces for STOP + TERMO + JUICE
  */
 
-export type GameMode = 'stop_termo' | 'termo_multiplayer' | 'juice_photo' | 'forca';
+export type GameMode = 'stop_termo' | 'termo_multiplayer' | 'juice_photo' | 'forca' | 'uno';
+
+export type UnoColor = 'red' | 'blue' | 'green' | 'yellow' | 'wild';
+
+export type UnoValue =
+  | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+  | 'skip'
+  | 'reverse'
+  | 'draw2'
+  | 'wild'
+  | 'wild_draw4';
+
+export interface UnoCard {
+  id: string;             // Ex: "red_7_1", "wild_1"
+  color: UnoColor;        // 'red' | 'blue' | 'green' | 'yellow' | 'wild'
+  value: UnoValue;        // '0'-'9', 'skip', 'reverse', 'draw2', 'wild', 'wild_draw4'
+  score: number;          // Face value 0-9, 20 for action, 50 for wild
+}
+
+export interface UnoLastAction {
+  playerId: string;
+  playerName: string;
+  action: 'play' | 'draw' | 'pass' | 'uno' | 'catch_uno' | 'color_change' | 'skip';
+  card?: UnoCard;
+  chosenColor?: UnoColor;
+  message: string;
+}
+
+export interface UnoGameState {
+  hands: Record<string, UnoCard[]>;     // playerId -> array of cards
+  drawDeck: UnoCard[];                  // remaining draw pile
+  discardPile: UnoCard[];               // played pile
+  topCard: UnoCard;                     // currently visible card
+  currentColor: UnoColor;               // active color to match
+  currentTurnPlayerId: string;          // whose turn it is
+  direction: 1 | -1;                    // 1: clockwise, -1: counter-clockwise
+  unoCalled: Record<string, boolean>;   // has called UNO when at 1 card
+  hasDrawnThisTurn: boolean;            // has current player drawn this turn?
+  drawnCardId?: string;                 // card drawn this turn
+  lastAction?: UnoLastAction;
+  winnerId?: string;
+  roundScores?: Record<string, number>;
+}
 
 export type WordDifficulty = 1 | 2 | 3 | 4; // 1: Fácil, 2: Médio, 3: Difícil, 4: Especialista
 
@@ -99,6 +141,7 @@ export interface RoundConfig {
     hint: string;
     difficulty?: 'facil' | 'medio' | 'dificil';
   }>;
+  unoState?: UnoGameState;
 }
 
 export type LetterStatus = 'correct' | 'present' | 'absent' | 'empty';
@@ -155,6 +198,9 @@ export interface PlayerAnswer {
   forcaWon?: boolean;                // Se salvou o boneco / acertou
   forcaRevealedCount?: number;       // Quantas letras acertou
   guessedTarget?: boolean;
+  unoCardsLeft?: number;             // Quantas cartas restaram no UNO
+  unoScore?: number;                 // Pontos somados pelas cartas dos adversários
+  unoWinner?: boolean;               // Vencedor da rodada de UNO
 }
 
 export interface Friend {
@@ -196,6 +242,8 @@ export interface RoomSettings {
   votingTimeSeconds: number;  // Tempo para a fase de votação (ex: 20 segundos)
   juiceTheme?: JuiceThemeId;  // Tema selecionado para o modo Juice / Foto
   forcaCategory?: string;     // Categoria selecionada para o Jogo da Forca (ex: "Animais", "Infância & Brinquedos", "todas")
+  unoBotsCount?: number;      // Quantidade de bots no UNO (0 a 3)
+  unoStackRules?: boolean;    // Acumular +2 com +2 e +4 com +4
 }
 
 export type RoomStatus = 'lobby' | 'countdown' | 'round_active' | 'round_voting' | 'round_results' | 'game_over' | 'closed';

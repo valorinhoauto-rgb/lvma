@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" width="200" height="300">
+  <text x="24" y="44" font-family="'Arial Black', sans-serif" font-size="26" font-weight="900" fill="#FFFFFF">⇄</text>
+  <text x="176" y="276" font-family="'Arial Black', sans-serif" font-size="26" font-weight="900" fill="#FFFFFF" transform="rotate(180 176 266)">⇄</text>
+  <ellipse cx="100" cy="150" rx="80" ry="52" transform="rotate(-25 100 150)" fill="#FFFFFF"/>
+  <path d="M 72 136 C 72 110, 116 104, 134 122" fill="none" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+  <polygon points="124,110 148,124 130,146" fill="#000000"/>
+  <path d="M 128 164 C 128 190, 84 196, 66 178" fill="none" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+  <polygon points="76,190 52,176 70,154" fill="#000000"/>
+</svg>

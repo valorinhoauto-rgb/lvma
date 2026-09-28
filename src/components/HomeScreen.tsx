@@ -183,6 +183,52 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
         </div>
 
+        {/* Jogo UNO (Cartas & Ação • Regras Oficiais) */}
+        <div className="w-full bg-gradient-to-r from-red-600/25 via-amber-600/20 to-emerald-600/20 hover:from-red-600/35 hover:to-emerald-600/30 border border-red-500/50 rounded-2xl p-4 flex flex-col justify-between gap-2.5 shadow-xl shadow-red-950/30 transition-all duration-200">
+          <div className="flex items-center gap-3 text-left">
+            <div className="w-12 h-12 rounded-xl bg-black/50 border border-red-500/40 p-1 flex items-center justify-center shrink-0">
+              <img src="/assets/uno/logo.svg" alt="UNO Logo" className="w-full h-full object-contain drop-shadow" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-base font-black font-['Outfit'] text-red-400 leading-tight">JOGO UNO</span>
+                <span className="text-[10px] bg-red-500/20 text-red-300 px-1.5 py-0.2 rounded font-bold border border-red-500/40">
+                  Cartas Oficiais
+                </span>
+              </div>
+              <div className="text-xs font-medium text-slate-300 truncate">
+                108 cartas, Bloqueio, Inverter, +2, Coringas, Grito de UNO e Bots!
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-0.5">
+            <button
+              id="btn-home-uno-multiplayer"
+              onClick={() => {
+                sound.playClick();
+                onQuickPlay('uno');
+              }}
+              className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Jogar UNO Online</span>
+            </button>
+
+            <button
+              id="btn-home-uno-bots"
+              onClick={() => {
+                sound.playClick();
+                onQuickPlay('uno');
+              }}
+              className="py-2.5 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-900 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Jogar com Bots</span>
+            </button>
+          </div>
+        </div>
+
         {/* Create Private Room */}
         <button
           id="btn-home-create-room"

@@ -134,7 +134,7 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
       )}
 
       {/* Secret Word Reveal (Termo Mode) */}
-      {round.targetWord && !round.photoChallenge && !round.forcaChallenge && (
+      {round.targetWord && !round.photoChallenge && !round.forcaChallenge && room.settings.gameMode !== 'uno' && (
         <div className="bg-slate-900 border border-emerald-500/40 rounded-2xl p-4 shadow-xl text-center space-y-1">
           <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
             Palavra Secreta do Termo
@@ -142,6 +142,26 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
           <div className="text-2xl font-black text-white font-mono tracking-widest uppercase">
             {round.targetWord}
           </div>
+        </div>
+      )}
+
+      {/* UNO Winner Reveal */}
+      {room.settings.gameMode === 'uno' && (
+        <div className="bg-slate-900 border border-red-500/40 rounded-2xl p-4 shadow-xl text-center space-y-2">
+          <div className="flex items-center justify-center gap-2">
+            <img src="/assets/uno/logo.svg" alt="UNO Logo" className="h-7 object-contain" />
+            <span className="text-xs font-black text-amber-400 uppercase tracking-wider">Resultado da Rodada de UNO</span>
+          </div>
+          {(() => {
+            const winner = room.players.find(p => p.id === round.unoState?.winnerId);
+            return winner ? (
+              <div className="text-emerald-300 font-bold text-sm">
+                🎉 <strong className="text-white text-base">{winner.name}</strong> bateu todas as cartas e venceu a rodada!
+              </div>
+            ) : (
+              <div className="text-slate-300 text-xs">Partida concluída!</div>
+            );
+          })()}
         </div>
       )}
 
@@ -292,7 +312,20 @@ export const RoundResultsScreen: React.FC<RoundResultsScreenProps> = ({
 
                     {answer ? (
                       <div className="text-xs font-mono flex items-center gap-1 mt-0.5 flex-wrap">
-                        {room.settings.gameMode === 'forca' ? (
+                        {room.settings.gameMode === 'uno' ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={answer.isValid || answer.unoWinner ? 'text-emerald-300 font-bold' : 'text-slate-400'}>
+                              {answer.isValid || answer.unoWinner
+                                ? '🎉 Bateu todas as cartas!'
+                                : `${answer.unoCardsLeft ?? 0} ${(answer.unoCardsLeft ?? 0) === 1 ? 'carta restante' : 'cartas restantes'}`}
+                            </span>
+                            {answer.isValid && (
+                              <span className="text-[10px] bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded font-black border border-red-500/40">
+                                🏆 VENCEU A RODADA
+                              </span>
+                            )}
+                          </div>
+                        ) : room.settings.gameMode === 'forca' ? (
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={answer.isValid || answer.forcaWon ? 'text-emerald-300 font-bold' : 'text-slate-400'}>
                               {answer.isValid || answer.forcaWon

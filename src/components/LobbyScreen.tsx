@@ -68,6 +68,13 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
         timeLimit: 0,
         forcaCategory: room.settings.forcaCategory || 'todas'
       });
+    } else if (mode === 'uno') {
+      onUpdateSettings({
+        gameMode: mode,
+        timeLimit: 0,
+        totalRounds: room.settings.totalRounds || 3,
+        unoBotsCount: room.settings.unoBotsCount ?? (room.players.length === 1 ? 2 : 0)
+      });
     } else if (mode === 'juice_photo') {
       onUpdateSettings({
         gameMode: mode,
@@ -306,7 +313,11 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             <button
               id="btn-lobby-start-game"
               onClick={() => {
-                sound.playSuccess();
+                if (room.settings.gameMode === 'uno') {
+                  sound.playUnoGamestart();
+                } else {
+                  sound.playSuccess();
+                }
                 onStartGame();
               }}
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black p-4 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 text-base sm:text-lg transition-all active:scale-[0.98]"
@@ -342,7 +353,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               {/* Game Mode Selector */}
               <div>
                 <label className="text-xs text-slate-400 font-semibold block mb-1.5">Escolha o Modo de Jogo</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
                   <button
                     disabled={!isHost}
                     onClick={() => handleSelectMode('stop_termo')}
@@ -397,6 +408,20 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                     <div className="text-sm mb-0.5">🪢</div>
                     <div className="font-bold">FORCA</div>
                     <div className="text-[10px] text-slate-500">Infância & Dupla</div>
+                  </button>
+
+                  <button
+                    disabled={!isHost}
+                    onClick={() => handleSelectMode('uno')}
+                    className={`p-2 rounded-xl text-center text-xs border transition-all ${
+                      room.settings.gameMode === 'uno'
+                        ? 'bg-red-500/20 border-red-500 text-red-300 font-bold shadow-sm shadow-red-950'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <div className="text-sm mb-0.5">🎴</div>
+                    <div className="font-bold">UNO</div>
+                    <div className="text-[10px] text-slate-500">Cartas & Ação</div>
                   </button>
                 </div>
               </div>
@@ -876,6 +901,75 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                       <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                       <span>Abrir Duelo em Dupla (2 Jogadores)</span>
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ============================================================== */}
+              {/* MODE 5: UNO SETTINGS */}
+              {/* ============================================================== */}
+              {room.settings.gameMode === 'uno' && (
+                <div className="space-y-4 pt-1">
+                  {/* How it works banner */}
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-xs text-red-200/90 leading-relaxed space-y-1">
+                    <div className="font-bold text-red-300 flex items-center gap-1.5">
+                      <span>🎴</span>
+                      <span>Jogo UNO com Regras Oficiais</span>
+                    </div>
+                    <p className="text-[11px] text-red-200/80">
+                      108 cartas, cartas de Bloqueio, Inverter, +2, Coringa e +4! Jogue com amigos online ou adicione Bots para completar a mesa. Não se esqueça de gritar <strong>UNO!</strong> quando tiver 1 carta!
+                    </p>
+                  </div>
+
+                  {/* Rounds count */}
+                  <div>
+                    <label className="text-xs text-slate-400 font-semibold block mb-1.5">Quantidade de Rodadas</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[1, 3, 5].map((num) => (
+                        <button
+                          key={num}
+                          disabled={!isHost}
+                          onClick={() => {
+                            sound.playClick();
+                            onUpdateSettings({ totalRounds: num });
+                          }}
+                          className={`py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                            room.settings.totalRounds === num
+                              ? 'bg-red-500 text-white border-red-500 font-black'
+                              : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+                          }`}
+                        >
+                          {num} {num === 1 ? 'Partida' : 'Partidas'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Bots count */}
+                  <div>
+                    <label className="text-xs text-slate-400 font-semibold block mb-1.5">Adicionar Bots na Mesa</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[0, 1, 2, 3].map((count) => {
+                        const isSelected = (room.settings.unoBotsCount ?? (room.players.length === 1 ? 2 : 0)) === count;
+                        return (
+                          <button
+                            key={count}
+                            disabled={!isHost}
+                            onClick={() => {
+                              sound.playClick();
+                              onUpdateSettings({ unoBotsCount: count });
+                            }}
+                            className={`py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                              isSelected
+                                ? 'bg-amber-500 text-slate-950 border-amber-500 font-black'
+                                : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+                            }`}
+                          >
+                            {count === 0 ? 'Sem Bots' : `${count} ${count === 1 ? 'Bot' : 'Bots'}`}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}

@@ -362,6 +362,47 @@ async function startServer() {
     res.json({ success: true, room: room.state });
   });
 
+  // UNO Endpoints
+  app.post('/api/rooms/:id/uno/play', (req, res) => {
+    const room = gameManager.getRoom(req.params.id);
+    if (!room) return res.status(404).json({ error: 'Sala não encontrada.' });
+    const { playerId, cardId, chosenColor } = req.body;
+    const result = room.playUnoCard(playerId, cardId, chosenColor);
+    res.json(result);
+  });
+
+  app.post('/api/rooms/:id/uno/draw', (req, res) => {
+    const room = gameManager.getRoom(req.params.id);
+    if (!room) return res.status(404).json({ error: 'Sala não encontrada.' });
+    const { playerId } = req.body;
+    const result = room.drawUnoCard(playerId);
+    res.json(result);
+  });
+
+  app.post('/api/rooms/:id/uno/pass', (req, res) => {
+    const room = gameManager.getRoom(req.params.id);
+    if (!room) return res.status(404).json({ error: 'Sala não encontrada.' });
+    const { playerId } = req.body;
+    const result = room.passUnoTurn(playerId);
+    res.json(result);
+  });
+
+  app.post('/api/rooms/:id/uno/call', (req, res) => {
+    const room = gameManager.getRoom(req.params.id);
+    if (!room) return res.status(404).json({ error: 'Sala não encontrada.' });
+    const { playerId } = req.body;
+    const result = room.callUno(playerId);
+    res.json(result);
+  });
+
+  app.post('/api/rooms/:id/uno/catch', (req, res) => {
+    const room = gameManager.getRoom(req.params.id);
+    if (!room) return res.status(404).json({ error: 'Sala não encontrada.' });
+    const { reporterId, targetId } = req.body;
+    const result = room.catchUno(reporterId, targetId);
+    res.json(result);
+  });
+
   // Instant client validation preview (without submitting)
   app.post('/api/validate', (req, res) => {
     const { answer, round } = req.body;

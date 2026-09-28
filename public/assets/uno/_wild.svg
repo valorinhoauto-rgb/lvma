@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" width="200" height="300">
+  <rect x="4" y="4" width="192" height="292" rx="24" fill="#121316" stroke="#FFFFFF" stroke-width="8"/>
+  <g transform="translate(100, 150) rotate(-25)">
+    <clipPath id="ovalClip">
+      <ellipse cx="0" cy="0" rx="76" ry="50"/>
+    </clipPath>
+    <g clip-path="url(#ovalClip)">
+      <rect x="-80" y="-60" width="80" height="60" fill="#E52521"/>
+      <rect x="0" y="-60" width="80" height="60" fill="#0096E6"/>
+      <rect x="-80" y="0" width="80" height="60" fill="#FFD100"/>
+      <rect x="0" y="0" width="80" height="60" fill="#2BA84A"/>
+    </g>
+    <ellipse cx="0" cy="0" rx="76" ry="50" fill="none" stroke="#FFFFFF" stroke-width="5"/>
+  </g>
+</svg>

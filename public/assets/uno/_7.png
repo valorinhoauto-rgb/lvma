@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" width="200" height="300">
+  <!-- Corner pips -->
+  <text x="24" y="44" font-family="'Arial Black', sans-serif" font-size="28" font-weight="900" fill="#FFFFFF">7</text>
+  <text x="176" y="276" font-family="'Arial Black', sans-serif" font-size="28" font-weight="900" fill="#FFFFFF" transform="rotate(180 176 266)">7</text>
+  <!-- Center White Oval -->
+  <ellipse cx="100" cy="150" rx="80" ry="52" transform="rotate(-25 100 150)" fill="#FFFFFF"/>
+  <!-- Center Digit -->
+  <text x="100" y="185" font-family="'Impact', 'Arial Black', sans-serif" font-size="98" font-weight="900" text-anchor="middle" fill="#000000">7</text>
+</svg>

@@ -12,6 +12,15 @@ import { getRandomForcaChallenge, normalizeForcaString, ForcaChallenge } from '.
 import { wordEngine } from '../server/wordEngine.ts';
 import { isValidTermoWord, getRandomTermoTarget, getAlternatingTermoLength } from '../data/termoDictionary.ts';
 import {
+  initUnoGame,
+  playUnoCardAction,
+  drawUnoCardAction,
+  passUnoTurnAction,
+  callUnoAction,
+  catchUnoAction
+} from '../data/unoEngine.ts';
+import { chooseBotUnoMove, getNextUnoPlayerIndex } from '../data/unoDeck.ts';
+import {
   JuiceGuessResult,
   Player,
   PlayerAnswer,
@@ -19,6 +28,9 @@ import {
   RoomState,
   RoundConfig,
   TermoGuessResult,
+  UnoCard,
+  UnoColor,
+  UnoGameState,
   WordEntry
 } from '../types.ts';
 
@@ -30,6 +42,8 @@ class ClientGameEngine {
   private eventListeners: Set<GameEventListener> = new Set();
   private firestoreUnsub: Unsubscribe | null = null;
   private timerHandle: any = null;
+  private botUnoTimerHandle: any = null;
+  private botUnoWatchdogHandle: any = null;
   private possibleCurrentWords: WordEntry[] = [];
   private usedCombinations: Set<string> = new Set();
   private usedPhotoIds: Set<string> = new Set();
@@ -193,8 +207,9 @@ class ClientGameEngine {
           // Se eu sou o Host, checar autoritativamente se alguém venceu (Termo) ou se todos responderam para encerrar a rodada sem travar
           if (this.isHost && remoteState.status === 'round_active' && remoteState.players && remoteState.players.length > 0) {
             const isTermo = remoteState.settings?.gameMode === 'termo_multiplayer';
+            const isStop = remoteState.settings?.gameMode === 'stop_termo';
             const hasTermoWinner = isTermo && Object.values(remoteState.roundAnswers || {}).some(a => a.isValid);
-            const allAnswered = remoteState.players.every(p => p.hasAnswered);
+            const allAnswered = (isTermo || isStop) && remoteState.players.every(p => p.hasAnswered);
 
             if ((hasTermoWinner || allAnswered) && !this.isAdvancingRound) {
               this.isAdvancingRound = true;
@@ -203,6 +218,11 @@ class ClientGameEngine {
                 this.handleRoundTimeUp();
                 this.isAdvancingRound = false;
               }, 1200);
+            }
+
+            // No UNO, se o turno atual pertence a um BOT, aciona a IA com segurança
+            if (remoteState.settings?.gameMode === 'uno' && remoteState.currentRound?.unoState) {
+              this.triggerBotUnoTurnIfNeeded();
             }
           }
         }
@@ -434,6 +454,47 @@ class ClientGameEngine {
         playerForcaChallenges: playerChallenges
       };
       this.possibleCurrentWords = [];
+    } else if (gameMode === 'uno') {
+      // Modo UNO (Regras Oficiais com 108 cartas e suporte a Bots)
+      const botCount = this.activeRoom.settings.unoBotsCount ?? (this.activeRoom.players.length === 1 ? 2 : 0);
+      const BOT_NAMES = ['Bot Lucas', 'Bot Sofia', 'Bot Gabriel', 'Bot Laura'];
+      const currentBotCount = this.activeRoom.players.filter(p => p.isBot).length;
+
+      if (currentBotCount < botCount) {
+        for (let i = currentBotCount; i < botCount; i++) {
+          const botId = `bot_uno_${i + 1}`;
+          if (!this.activeRoom.players.some(p => p.id === botId)) {
+            this.activeRoom.players.push({
+              id: botId,
+              name: BOT_NAMES[i % BOT_NAMES.length],
+              avatar: `bot_${i + 1}`,
+              avatarColor: '#38bdf8',
+              isHost: false,
+              isBot: true,
+              score: 0,
+              roundScore: 0,
+              hasAnswered: false,
+              isReady: true
+            });
+          }
+        }
+      }
+
+      const unoState = initUnoGame(this.activeRoom.players);
+      const now = Date.now();
+      round = {
+        roundNumber,
+        totalRounds: this.activeRoom.settings.totalRounds,
+        letter: 'U',
+        categoryId: 'uno',
+        categoryName: 'UNO Clássico',
+        wordLength: 0,
+        timeLimit: 0,
+        startedAt: now,
+        endsAt: 0,
+        unoState
+      };
+      this.possibleCurrentWords = [];
     } else {
       const comb = wordEngine.getRandomCombination({
         minLength,
@@ -476,12 +537,21 @@ class ClientGameEngine {
     this.notify('room:update', { room: this.activeRoom });
     this.syncToFirestore(this.activeRoom);
 
-    // Round timer (exceto no modo termo_multiplayer ou forca com tempo livre)
-    if (this.activeRoom.settings.gameMode !== 'termo_multiplayer' && this.activeRoom.settings.gameMode !== 'forca' && round.timeLimit > 0) {
+    // Round timer (exceto nos modos por turnos / dedução livre)
+    if (
+      this.activeRoom.settings.gameMode !== 'termo_multiplayer' &&
+      this.activeRoom.settings.gameMode !== 'forca' &&
+      this.activeRoom.settings.gameMode !== 'uno' &&
+      round.timeLimit > 0
+    ) {
       const durationMs = (round.timeLimit * 1000) + 500;
       this.timerHandle = setTimeout(() => {
         this.handleRoundTimeUp();
       }, durationMs);
+    }
+
+    if (this.activeRoom.settings.gameMode === 'uno') {
+      this.triggerBotUnoTurnIfNeeded();
     }
 
     return this.activeRoom;
@@ -1036,8 +1106,12 @@ class ClientGameEngine {
 
     for (const ans of answers) {
       let pts = 0;
-      if (this.activeRoom.settings.gameMode === 'termo_multiplayer' || this.activeRoom.settings.gameMode === 'forca') {
-        pts = ans.isValid ? ans.points : 0;
+      if (
+        this.activeRoom.settings.gameMode === 'termo_multiplayer' ||
+        this.activeRoom.settings.gameMode === 'forca' ||
+        this.activeRoom.settings.gameMode === 'uno'
+      ) {
+        pts = ans.points || 0;
       } else if (this.activeRoom.settings.gameMode === 'juice_photo') {
         pts = ans.points;
       } else {
@@ -1108,10 +1182,336 @@ class ClientGameEngine {
     return this.activeRoom;
   }
 
+  // =========================================================================
+  // MÉTODOS DO JOGO UNO (Jogar, Comprar, Passar, Gritar UNO, Denunciar, Bots)
+  // =========================================================================
+
+  private cloneUnoRoomState(room: RoomState): RoomState {
+    if (!room.currentRound?.unoState) return { ...room };
+    const s = room.currentRound.unoState;
+    const clonedHands: Record<string, UnoCard[]> = {};
+    for (const [pId, hand] of Object.entries(s.hands)) {
+      clonedHands[pId] = Array.isArray(hand) ? [...hand] : [];
+    }
+    return {
+      ...room,
+      players: room.players.map(p => ({ ...p })),
+      currentRound: {
+        ...room.currentRound,
+        unoState: {
+          ...s,
+          hands: clonedHands,
+          drawDeck: [...s.drawDeck],
+          discardPile: [...s.discardPile],
+          unoCalled: { ...s.unoCalled },
+          lastAction: s.lastAction ? { ...s.lastAction } : undefined
+        }
+      }
+    };
+  }
+
+  public playUnoCard(playerId: string, cardId: string, chosenColor?: UnoColor) {
+    if (!this.activeRoom || !this.activeRoom.currentRound?.unoState) return null;
+    const unoState = this.activeRoom.currentRound.unoState;
+    const res = playUnoCardAction(unoState, this.activeRoom.players, playerId, cardId, chosenColor);
+    if (!res.success) return null;
+
+    if (res.isGameOver && this.isHost) {
+      this.finishUnoRound();
+      return this.activeRoom;
+    }
+
+    this.activeRoom = this.cloneUnoRoomState(this.activeRoom);
+    this.notify('room:update', { room: this.activeRoom });
+    this.syncToFirestore(this.activeRoom);
+
+    if (this.isHost) {
+      this.triggerBotUnoTurnIfNeeded();
+    }
+    return this.activeRoom;
+  }
+
+  public drawUnoCard(playerId: string) {
+    if (!this.activeRoom || !this.activeRoom.currentRound?.unoState) return null;
+    const unoState = this.activeRoom.currentRound.unoState;
+    const res = drawUnoCardAction(unoState, this.activeRoom.players, playerId);
+    if (!res.success) return null;
+
+    this.activeRoom = this.cloneUnoRoomState(this.activeRoom);
+    this.notify('room:update', { room: this.activeRoom });
+    this.syncToFirestore(this.activeRoom);
+    return this.activeRoom;
+  }
+
+  public passUnoTurn(playerId: string) {
+    if (!this.activeRoom || !this.activeRoom.currentRound?.unoState) return null;
+    const unoState = this.activeRoom.currentRound.unoState;
+    const res = passUnoTurnAction(unoState, this.activeRoom.players, playerId);
+    if (!res.success) return null;
+
+    this.activeRoom = this.cloneUnoRoomState(this.activeRoom);
+    this.notify('room:update', { room: this.activeRoom });
+    this.syncToFirestore(this.activeRoom);
+
+    if (this.isHost) {
+      this.triggerBotUnoTurnIfNeeded();
+    }
+    return this.activeRoom;
+  }
+
+  public callUno(playerId: string) {
+    if (!this.activeRoom || !this.activeRoom.currentRound?.unoState) return null;
+    const unoState = this.activeRoom.currentRound.unoState;
+    const res = callUnoAction(unoState, this.activeRoom.players, playerId);
+    if (!res.success) return null;
+
+    this.activeRoom = this.cloneUnoRoomState(this.activeRoom);
+    this.notify('room:update', { room: this.activeRoom });
+    this.syncToFirestore(this.activeRoom);
+    return this.activeRoom;
+  }
+
+  public catchUno(reporterId: string, targetId: string) {
+    if (!this.activeRoom || !this.activeRoom.currentRound?.unoState) return null;
+    const unoState = this.activeRoom.currentRound.unoState;
+    const res = catchUnoAction(unoState, this.activeRoom.players, reporterId, targetId);
+    if (!res.success) return null;
+
+    this.activeRoom = this.cloneUnoRoomState(this.activeRoom);
+    this.notify('room:update', { room: this.activeRoom });
+    this.syncToFirestore(this.activeRoom);
+    return this.activeRoom;
+  }
+
+  private finishUnoRound() {
+    if (!this.activeRoom || !this.activeRoom.currentRound?.unoState) return;
+    const unoState = this.activeRoom.currentRound.unoState;
+    const winnerId = unoState.winnerId;
+
+    for (const player of this.activeRoom.players) {
+      const isWinner = player.id === winnerId;
+      const cardsRemaining = unoState.hands[player.id]?.length || 0;
+      const pts = isWinner ? (unoState.roundScores?.[player.id] || 100) : 0;
+
+      this.activeRoom.roundAnswers[player.id] = {
+        playerId: player.id,
+        playerName: player.name,
+        rawAnswer: isWinner ? 'BATEU NO UNO!' : `${cardsRemaining} cartas restantes`,
+        normalizedAnswer: isWinner ? 'VENCEDOR' : 'RESTANTE',
+        isValid: isWinner,
+        inDictionary: true,
+        isCommunityApproved: false,
+        votes: { yes: 0, no: 0, voterIds: {} },
+        responseTimeMs: 0,
+        points: pts,
+        unoCardsLeft: cardsRemaining,
+        unoScore: pts,
+        unoWinner: isWinner
+      };
+      player.hasAnswered = true;
+    }
+
+    this.clearTimers();
+    this.timerHandle = setTimeout(() => {
+      this.endRound();
+    }, 1500);
+  }
+
+  public setMyPlayerId(playerId: string) {
+    this.myPlayerId = playerId;
+    if (this.activeRoom) {
+      const isRoomHost = this.activeRoom.hostId === playerId;
+      const humanPlayers = this.activeRoom.players.filter(p => !p.isBot && !p.id.startsWith('bot_'));
+      if (isRoomHost || humanPlayers.length <= 1) {
+        this.isHost = true;
+      }
+    }
+  }
+
+  public triggerBotUnoTurnIfNeeded(executorId?: string) {
+    if (executorId) {
+      this.myPlayerId = executorId;
+    }
+    if (!this.activeRoom || !this.activeRoom.currentRound?.unoState) return;
+    const unoState = this.activeRoom.currentRound.unoState;
+    if (unoState.winnerId) return;
+
+    const currentTurnId = unoState.currentTurnPlayerId;
+    const currentPlayer = this.activeRoom.players.find(p => p.id === currentTurnId);
+    const isBot = Boolean(currentPlayer?.isBot || currentTurnId.startsWith('bot_'));
+    if (!isBot) return;
+
+    // Se sou o host da sala OU o único humano na mesa, sou o responsável pela execução dos bots
+    const myId = executorId || this.myPlayerId;
+    const isRoomHost = this.isHost || (myId && this.activeRoom.hostId === myId);
+    const humanPlayers = this.activeRoom.players.filter(p => !p.isBot && !p.id.startsWith('bot_'));
+    const isOnlyHuman = humanPlayers.length <= 1;
+
+    if (!isRoomHost && !isOnlyHuman) {
+      return;
+    }
+    this.isHost = true;
+
+    if (this.botUnoTimerHandle) {
+      clearTimeout(this.botUnoTimerHandle);
+      this.botUnoTimerHandle = null;
+    }
+    if (this.botUnoWatchdogHandle) {
+      clearTimeout(this.botUnoWatchdogHandle);
+      this.botUnoWatchdogHandle = null;
+    }
+
+    // Watchdog anti-congelamento: se o bot não jogar em até 2.8 segundos por qualquer motivo, força a jogada ou passa
+    this.botUnoWatchdogHandle = setTimeout(() => {
+      if (!this.activeRoom || !this.activeRoom.currentRound?.unoState) return;
+      const s = this.activeRoom.currentRound.unoState;
+      if (!s.winnerId && s.currentTurnPlayerId === currentTurnId) {
+        console.warn('UNO Bot Watchdog triggered: forcing turn advance for', currentTurnId);
+        this.executeBotTurnLogic(s, currentTurnId, true);
+      }
+    }, 2800);
+
+    // Delay humanizado entre 550ms e 950ms para ritmo natural de jogo
+    const delay = 550 + Math.random() * 400;
+    this.botUnoTimerHandle = setTimeout(() => {
+      this.botUnoTimerHandle = null;
+      if (this.botUnoWatchdogHandle) {
+        clearTimeout(this.botUnoWatchdogHandle);
+        this.botUnoWatchdogHandle = null;
+      }
+
+      if (!this.activeRoom || !this.activeRoom.currentRound?.unoState) return;
+      const state = this.activeRoom.currentRound.unoState;
+      if (state.winnerId || state.currentTurnPlayerId !== currentTurnId) return;
+
+      this.executeBotTurnLogic(state, currentTurnId, false);
+    }, delay);
+  }
+
+  private executeBotTurnLogic(state: UnoGameState, currentTurnId: string, isWatchdog = false) {
+    if (!this.activeRoom) return;
+
+    try {
+      state.hands[currentTurnId] = state.hands[currentTurnId] || [];
+      const botHand = state.hands[currentTurnId];
+
+      // 1. Bot tem 1 carta e não chamou UNO: chama agora!
+      if (botHand.length === 1 && !state.unoCalled[currentTurnId]) {
+        callUnoAction(state, this.activeRoom.players, currentTurnId);
+      }
+
+      // 2. Bot tem chance de denunciar oponente que esqueceu de gritar UNO
+      for (const opp of this.activeRoom.players) {
+        if (opp.id !== currentTurnId && (state.hands[opp.id]?.length === 1) && !state.unoCalled[opp.id]) {
+          if (Math.random() < 0.6) {
+            catchUnoAction(state, this.activeRoom.players, currentTurnId, opp.id);
+            break;
+          }
+        }
+      }
+
+      // 3. Escolhe jogada com a IA inteligente de UNO
+      const move = chooseBotUnoMove(botHand, state.topCard, state.currentColor);
+      if (move) {
+        if (botHand.length === 2) {
+          state.unoCalled[currentTurnId] = true;
+        }
+        const res = playUnoCardAction(state, this.activeRoom.players, currentTurnId, move.card.id, move.chosenColor);
+        if (res.isGameOver) {
+          this.finishUnoRound();
+          return;
+        }
+        if (!res.success) {
+          // Se falhou por alguma razão rara, compra carta ou passa a vez
+          this.botForceDrawOrPass(state, currentTurnId);
+        }
+      } else {
+        // Bot não possui carta jogável na mão
+        if (state.hasDrawnThisTurn) {
+          // Já comprou nesta rodada: passa a vez
+          passUnoTurnAction(state, this.activeRoom.players, currentTurnId, true);
+        } else {
+          // Compra uma carta do baralho
+          const drawRes = drawUnoCardAction(state, this.activeRoom.players, currentTurnId);
+          if (drawRes.success && drawRes.canPlay && drawRes.drawnCard) {
+            let chosenColor: UnoColor | undefined = undefined;
+            if (
+              drawRes.drawnCard.color === 'wild' ||
+              drawRes.drawnCard.value === 'wild' ||
+              drawRes.drawnCard.value === 'wild_draw4'
+            ) {
+              chosenColor = 'red';
+            }
+            const playRes = playUnoCardAction(state, this.activeRoom.players, currentTurnId, drawRes.drawnCard.id, chosenColor);
+            if (playRes.isGameOver) {
+              this.finishUnoRound();
+              return;
+            }
+            if (!playRes.success) {
+              passUnoTurnAction(state, this.activeRoom.players, currentTurnId, true);
+            }
+          } else {
+            // Carta comprada não pode ser jogada ou baralho esgotado: passa a vez
+            const passRes = passUnoTurnAction(state, this.activeRoom.players, currentTurnId, true);
+            if (!passRes.success) {
+              this.botForceAdvanceTurn(state, currentTurnId);
+            }
+          }
+        }
+      }
+    } catch (botErr) {
+      console.error('Bot execution error, auto-advancing turn:', botErr);
+      this.botForceAdvanceTurn(state, currentTurnId);
+    }
+
+    this.activeRoom = this.cloneUnoRoomState(this.activeRoom);
+    this.notify('room:update', { room: this.activeRoom });
+    this.syncToFirestore(this.activeRoom);
+
+    // Se o próximo jogador também for bot, agenda o próximo turno
+    this.triggerBotUnoTurnIfNeeded();
+  }
+
+  private botForceDrawOrPass(state: UnoGameState, currentTurnId: string) {
+    if (!this.activeRoom) return;
+    if (state.hasDrawnThisTurn) {
+      passUnoTurnAction(state, this.activeRoom.players, currentTurnId, true);
+    } else {
+      const drawRes = drawUnoCardAction(state, this.activeRoom.players, currentTurnId);
+      if (!drawRes.success || !drawRes.canPlay) {
+        passUnoTurnAction(state, this.activeRoom.players, currentTurnId, true);
+      }
+    }
+  }
+
+  private botForceAdvanceTurn(state: UnoGameState, currentTurnId: string) {
+    if (!this.activeRoom) return;
+    state.hasDrawnThisTurn = false;
+    state.drawnCardId = undefined;
+    const currentIdx = this.activeRoom.players.findIndex(p => p.id === currentTurnId);
+    const total = this.activeRoom.players.length || 1;
+    const nextIdx = getNextUnoPlayerIndex(currentIdx >= 0 ? currentIdx : 0, total, state.direction || 1, 1);
+    state.currentTurnPlayerId = this.activeRoom.players[nextIdx]?.id || '';
+    state.lastAction = {
+      playerId: currentTurnId,
+      playerName: this.activeRoom.players.find(p => p.id === currentTurnId)?.name || 'Bot',
+      action: 'pass',
+      message: 'Vez passada automaticamente.'
+    };
+  }
+
   public clearTimers() {
     if (this.timerHandle) {
       clearTimeout(this.timerHandle);
       this.timerHandle = null;
+    }
+    if (this.botUnoTimerHandle) {
+      clearTimeout(this.botUnoTimerHandle);
+      this.botUnoTimerHandle = null;
+    }
+    if (this.botUnoWatchdogHandle) {
+      clearTimeout(this.botUnoWatchdogHandle);
+      this.botUnoWatchdogHandle = null;
     }
   }
 

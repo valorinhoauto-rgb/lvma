@@ -18,6 +18,7 @@ import { JuicePhotoModeView } from './components/JuicePhotoModeView.tsx';
 import { MultiplayerTermoView } from './components/MultiplayerTermoView.tsx';
 import { ForcaModeView } from './components/ForcaModeView.tsx';
 import { ForcaDuoLocalModal } from './components/ForcaDuoLocalModal.tsx';
+import { UnoModeView } from './components/UnoModeView.tsx';
 import { RoundResultsScreen } from './components/RoundResultsScreen.tsx';
 import { GameFinalScreen } from './components/GameFinalScreen.tsx';
 import { TermoModeView } from './components/TermoModeView.tsx';
@@ -71,6 +72,11 @@ export default function App() {
     resetToLobby,
     handleTimeUp,
     sendChat,
+    playUnoCard,
+    drawUnoCard,
+    passUnoTurn,
+    callUno,
+    catchUno,
     leaveRoom
   } = useGameSocket(userProfile);
 
@@ -212,6 +218,16 @@ export default function App() {
       });
       return;
     }
+    if (mode === 'uno') {
+      await createRoom({
+        gameMode: mode,
+        totalRounds: 3,
+        timeLimit: 0,
+        scoringStyle: 'dynamic',
+        unoBotsCount: 2
+      });
+      return;
+    }
     await createRoom({
       gameMode: mode,
       totalRounds: 3,
@@ -333,6 +349,22 @@ export default function App() {
               hasAnswered={Boolean(myPlayer?.hasAnswered)}
               roundAnswers={room.roundAnswers}
               onSubmitGuess={submitAnswer}
+            />
+          );
+        }
+
+        // Jogo UNO (Regras Oficiais com Assets)
+        if (room.settings.gameMode === 'uno') {
+          return (
+            <UnoModeView
+              round={room.currentRound}
+              players={room.players}
+              currentUserId={userProfile.id}
+              onPlayCard={playUnoCard}
+              onDrawCard={drawUnoCard}
+              onPassTurn={passUnoTurn}
+              onCallUno={callUno}
+              onCatchUno={catchUno}
             />
           );
         }
