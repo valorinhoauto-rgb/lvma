@@ -70,7 +70,10 @@ export function createGuestProfile(): UserProfile {
     gamesWon: 0,
     totalCorrectWords: 0,
     fastestResponseMs: 999999,
-    achievements: []
+    achievements: [],
+    malmCoins: 250,
+    tournamentsWon: 0,
+    tournamentsPlayed: 0
   };
 }
 
@@ -85,6 +88,9 @@ export function getOrCreateUserProfile(): UserProfile {
       const parsed = JSON.parse(stored);
       if (!parsed.avatarColor) parsed.avatarColor = 'emerald';
       if (!parsed.nickname) parsed.nickname = parsed.name;
+      if (typeof parsed.malmCoins !== 'number') parsed.malmCoins = 250;
+      if (typeof parsed.tournamentsWon !== 'number') parsed.tournamentsWon = 0;
+      if (typeof parsed.tournamentsPlayed !== 'number') parsed.tournamentsPlayed = 0;
       // If not authenticated with Google, enforce guest status (random nick, locked customization)
       if (!parsed.isGoogleAuth) {
         parsed.isGoogleAuth = false;

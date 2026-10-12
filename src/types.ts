@@ -228,6 +228,9 @@ export interface Player {
   isReady: boolean;
   consecutiveWins?: number;
   currentAnswer?: string;
+  isSupporter?: boolean;
+  supporterBadge?: string;
+  nameColor?: string;
 }
 
 export interface RoomSettings {
@@ -281,6 +284,19 @@ export interface RoomState {
   }[];
 }
 
+export interface SupporterEntry {
+  id: string;
+  name: string;
+  nickname?: string;
+  avatar: string;
+  avatarColor?: string;
+  tier: 'cafe' | 'pizza' | 'servidor';
+  badge: string;
+  message?: string;
+  donatedAt: string;
+  amountBRL: number;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -300,6 +316,53 @@ export interface UserProfile {
   friends?: Friend[];
   email?: string;
   isGoogleAuth?: boolean;
+  malmCoins?: number; // Saldo de moedas/fichas competitivas
+  tournamentsWon?: number;
+  tournamentsPlayed?: number;
+  lastDailyBonusClaimed?: string;
+  isSupporter?: boolean; // Apoiador do projeto
+  supporterTier?: 'cafe' | 'pizza' | 'servidor';
+  supporterBadge?: string;
+  totalDonatedBRL?: number;
+  nameColor?: string;
+}
+
+export interface TournamentParticipant {
+  id: string;
+  name: string;
+  nickname?: string;
+  avatar: string;
+  avatarColor?: string;
+  score: number;
+  matchesPlayed: number;
+  wins: number;
+  registeredAt: string;
+  rank?: number;
+}
+
+export interface Tournament {
+  id: string;
+  title: string;
+  description: string;
+  gameMode: GameMode;
+  entryFee: number; // Em moedas MALM (0 = grátis)
+  prizePool: number; // Pote total de prêmios
+  prizes: {
+    first: number;
+    second: number;
+    third: number;
+  };
+  maxParticipants: number;
+  participants: TournamentParticipant[];
+  status: 'registering' | 'live' | 'finished';
+  createdAt: string;
+  startsAt: string;
+  creatorId: string;
+  creatorName: string;
+  winnerId?: string;
+  winnerName?: string;
+  isOfficial?: boolean;
+  activeRoomId?: string;
 }
 
 export interface GameHistoryEntry {

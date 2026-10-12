@@ -204,10 +204,15 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                       <PlayerAvatar avatar={p.avatar} avatarColor={p.avatarColor} size="md" />
                       <div className="min-w-0">
                         <div className="text-sm font-bold flex items-center gap-1.5 truncate">
-                          <span className="truncate">{p.name}</span>
+                          <span className={`truncate ${p.nameColor ? 'text-amber-300 font-extrabold' : ''}`}>{p.name}</span>
                           {p.isHost && (
                             <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-semibold shrink-0">
                               👑 Host
+                            </span>
+                          )}
+                          {p.isSupporter && (
+                            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-semibold shrink-0">
+                              {p.supporterBadge || '☕ Apoiador'}
                             </span>
                           )}
                         </div>

@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { Volume2, VolumeX, HelpCircle, BookOpen, Users } from 'lucide-react';
+import { Volume2, VolumeX, HelpCircle, BookOpen, Users, Trophy, Coins, Coffee } from 'lucide-react';
 import { sound } from '../utils/audio.ts';
 import { UserProfile } from '../types.ts';
 import { calculateLevel } from '../utils/profile.ts';
@@ -16,6 +16,8 @@ interface HeaderProps {
   onOpenHowToPlay: () => void;
   onOpenDictionary: () => void;
   onOpenFriends?: () => void;
+  onOpenTournaments?: () => void;
+  onOpenSupport?: () => void;
   onLogoClick?: () => void;
 }
 
@@ -26,6 +28,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenHowToPlay,
   onOpenDictionary,
   onOpenFriends,
+  onOpenTournaments,
+  onOpenSupport,
   onLogoClick
 }) => {
   const [isMuted, setIsMuted] = useState(sound.getMuted());
@@ -61,6 +65,26 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Competitive Tournaments button */}
+          {onOpenTournaments && (
+            <button
+              id="btn-nav-tournaments"
+              onClick={() => {
+                sound.playClick();
+                onOpenTournaments();
+              }}
+              title="Arena de Torneios & Premiações"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-yellow-500/10 hover:from-amber-500/30 hover:to-yellow-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+            >
+              <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="hidden sm:inline">Torneios</span>
+              <span className="bg-slate-950/80 text-amber-300 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-amber-500/30 flex items-center gap-0.5">
+                <Coins className="w-2.5 h-2.5 text-amber-400" />
+                {userProfile.malmCoins ?? 250}
+              </span>
+            </button>
+          )}
+
           {/* Friends List button */}
           {onOpenFriends && (
             <button
@@ -90,6 +114,26 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden md:inline">Dicionário</span>
           </button>
 
+          {/* Support / Buy a Coffee button */}
+          {onOpenSupport && (
+            <button
+              id="btn-nav-support"
+              onClick={() => {
+                sound.playClick();
+                onOpenSupport();
+              }}
+              title="Apoie o Projeto / Pague um Café"
+              className={`p-2 sm:px-3 sm:py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer ${
+                userProfile.isSupporter
+                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/50 shadow-amber-500/10'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+              }`}
+            >
+              <Coffee className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="hidden lg:inline">{userProfile.isSupporter ? 'Apoiador' : 'Apoiar'}</span>
+            </button>
+          )}
+
           {/* How to play */}
           <button
             id="btn-nav-how-to-play"
@@ -115,16 +159,27 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="btn-nav-profile"
             onClick={onOpenProfile}
-            className="flex items-center gap-2 pl-1.5 pr-3 py-1 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-full transition-colors group text-left cursor-pointer"
+            className={`flex items-center gap-2 pl-1.5 pr-3 py-1 border rounded-full transition-colors group text-left cursor-pointer ${
+              userProfile.isSupporter
+                ? 'bg-slate-850 hover:bg-slate-800 border-amber-500/50 shadow-sm shadow-amber-500/10'
+                : 'bg-slate-800 hover:bg-slate-700/80 border-slate-700'
+            }`}
           >
-            <PlayerAvatar
-              avatar={userProfile.avatar}
-              avatarColor={userProfile.avatarColor}
-              size="sm"
-            />
+            <div className="relative">
+              <PlayerAvatar
+                avatar={userProfile.avatar}
+                avatarColor={userProfile.avatarColor}
+                size="sm"
+              />
+              {userProfile.isSupporter && (
+                <span className="absolute -top-1 -right-1 text-[10px]" title={userProfile.supporterBadge || 'Apoiador'}>
+                  ☕
+                </span>
+              )}
+            </div>
             <div className="hidden sm:block">
               <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-xs font-bold text-white max-w-[100px] truncate">
+                <span className={`text-xs font-bold max-w-[100px] truncate ${userProfile.isSupporter ? 'text-amber-300' : 'text-white'}`}>
                   {userProfile.nickname || userProfile.name}
                 </span>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono font-bold">

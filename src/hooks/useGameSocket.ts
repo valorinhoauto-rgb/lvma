@@ -232,12 +232,17 @@ export function useGameSocket(userProfile: UserProfile) {
       {
         id: userProfile.id,
         name: userProfile.name,
+        nickname: userProfile.nickname,
         avatar: userProfile.avatar,
+        avatarColor: userProfile.avatarColor,
         isHost: true,
         score: 0,
         roundScore: 0,
         hasAnswered: false,
-        isReady: true
+        isReady: true,
+        isSupporter: userProfile.isSupporter,
+        supporterBadge: userProfile.supporterBadge,
+        nameColor: userProfile.nameColor
       },
       settings
     );
@@ -268,12 +273,17 @@ export function useGameSocket(userProfile: UserProfile) {
     const clientRoom = await clientGameEngine.joinRoom(cleanCode, {
       id: userProfile.id,
       name: userProfile.name,
+      nickname: userProfile.nickname,
       avatar: userProfile.avatar,
+      avatarColor: userProfile.avatarColor,
       isHost: false,
       score: 0,
       roundScore: 0,
       hasAnswered: false,
-      isReady: true
+      isReady: true,
+      isSupporter: userProfile.isSupporter,
+      supporterBadge: userProfile.supporterBadge,
+      nameColor: userProfile.nameColor
     });
 
     if (clientRoom) {

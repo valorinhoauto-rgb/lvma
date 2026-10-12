@@ -1,9 +1,5 @@
-/**
- * Home Screen for STOP + TERMO
- */
-
 import React, { useState } from 'react';
-import { Play, PlusCircle, Users, Target, Sparkles, ArrowRight, Camera, Award } from 'lucide-react';
+import { Play, PlusCircle, Users, Target, Sparkles, ArrowRight, Camera, Award, Coffee, Heart } from 'lucide-react';
 import { GameMode, UserProfile } from '../types.ts';
 import { sound } from '../utils/audio.ts';
 
@@ -16,6 +12,8 @@ interface HomeScreenProps {
   onOpenHowToPlay: () => void;
   onOpenDictionary: () => void;
   onOpenForcaDuoModal: () => void;
+  onOpenTournaments?: () => void;
+  onOpenSupport?: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -26,7 +24,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onStartTermoMode,
   onOpenHowToPlay,
   onOpenDictionary,
-  onOpenForcaDuoModal
+  onOpenForcaDuoModal,
+  onOpenTournaments,
+  onOpenSupport
 }) => {
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [joinError, setJoinError] = useState('');
@@ -66,6 +66,53 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           Jogos multiplayer de palavras e adivinhação: STOP + TERMO com votação da galera, Modo Juice fotográfico e TERMO coletivo!
         </p>
       </div>
+
+      {/* Competitive Tournaments Arena Hero Card */}
+      {onOpenTournaments && (
+        <div className="max-w-2xl mx-auto">
+          <button
+            id="btn-home-tournaments-arena"
+            onClick={() => {
+              sound.playClick();
+              onOpenTournaments();
+            }}
+            className="w-full bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/50 rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shadow-amber-950/20 group transition-all duration-200 cursor-pointer active:scale-[0.99]"
+          >
+            <div className="flex items-center gap-3.5 text-left w-full sm:w-auto">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/30 shrink-0 transform group-hover:scale-105 transition-transform">
+                <Award className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-base sm:text-lg font-black font-['Outfit'] text-white group-hover:text-amber-200 transition-colors">
+                    ARENA DE TORNEIOS
+                  </span>
+                  <span className="text-[10px] font-black uppercase bg-amber-500 text-slate-950 px-2 py-0.5 rounded-full font-mono">
+                    NOVO
+                  </span>
+                </div>
+                <p className="text-xs text-amber-200/80 font-medium">
+                  Dispute copas de UNO, Stop e Termo com premiação em moedas para o Top 3!
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-amber-500/20">
+              <div className="bg-slate-950/80 border border-amber-500/40 px-3 py-1.5 rounded-xl text-left">
+                <div className="text-[9px] uppercase font-bold text-slate-400 leading-none">Seu Saldo</div>
+                <div className="text-xs font-black text-amber-300 font-mono mt-0.5">
+                  🪙 {userProfile.malmCoins ?? 250}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-3.5 py-2.5 rounded-xl shadow-md transition-colors group-hover:translate-x-0.5 shrink-0">
+                <span>Acessar Arena</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Main Action Buttons Grid */}
       <div className="grid sm:grid-cols-2 gap-3.5 max-w-2xl mx-auto">
@@ -320,6 +367,39 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <p className="text-slate-400 text-[11px]">Adivinhe palavras secretas de 5 e 6 letras em competição simultânea.</p>
         </div>
       </div>
+
+      {/* Community & Donation Footer Banner */}
+      {onOpenSupport && (
+        <div className="max-w-2xl mx-auto pt-2">
+          <button
+            id="btn-home-support-banner"
+            onClick={() => {
+              sound.playClick();
+              onOpenSupport();
+            }}
+            className="w-full bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/40 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-left transition-all group cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform shrink-0">
+                <Coffee className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-200 group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
+                  <span>Gostou do jogo? Pague um cafézinho aos desenvolvedores</span>
+                  <Heart className="w-3 h-3 text-rose-400 fill-rose-400" />
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Ajude a manter os servidores ativos sem propagandas. Ganhe badge exclusivo e nome dourado!
+                </p>
+              </div>
+            </div>
+
+            <span className="text-[11px] font-bold text-amber-400 group-hover:translate-x-0.5 transition-transform shrink-0 hidden sm:inline">
+              Apoiar via PIX →
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -49,6 +49,18 @@ service cloud.firestore {
       allow get, create, update, delete: if isValidId(roomId);
       allow list: if true;
     }
+
+    // Tournaments (for competitive cups, registrations, and leaderboard prizes)
+    match /tournaments/{tournamentId} {
+      allow get, list, create, update: if isValidId(tournamentId);
+      allow delete: if isValidId(tournamentId);
+    }
+
+    // Supporters (for project donations, wall of fame, and founder badges)
+    match /supporters/{supporterId} {
+      allow get, list, create, update: if isValidId(supporterId);
+      allow delete: if isValidId(supporterId);
+    }
   }
 }
 

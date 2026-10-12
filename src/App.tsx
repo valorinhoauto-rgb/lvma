@@ -27,12 +27,14 @@ import { ProfileModal } from './components/ProfileModal.tsx';
 import { HowToPlayModal } from './components/HowToPlayModal.tsx';
 import { FriendsModal } from './components/FriendsModal.tsx';
 import { NicknameSetupModal } from './components/NicknameSetupModal.tsx';
+import { TournamentsModal } from './components/TournamentsModal.tsx';
+import { SupportModal } from './components/SupportModal.tsx';
 import { useGameSocket } from './hooks/useGameSocket.ts';
 import { getOrCreateUserProfile, saveUserProfile, createGuestProfile } from './utils/profile.ts';
 import { getSuggestedNickname } from './utils/avatarData.ts';
 import { sound } from './utils/audio.ts';
 import { auth, fetchUserProfile, recordGameHistory, syncUserProfileToDb, fetchFriendsFromDb, saveFriendToDb, removeFriendFromDb } from './lib/firebase.ts';
-import { GameMode, Friend, Player } from './types.ts';
+import { GameMode, Friend, Player, Tournament } from './types.ts';
 
 export default function App() {
   const [userProfile, setUserProfile] = useState(() => getOrCreateUserProfile());
@@ -42,6 +44,8 @@ export default function App() {
   const [showFriends, setShowFriends] = useState(false);
   const [showNicknameSetup, setShowNicknameSetup] = useState(false);
   const [showForcaDuoModal, setShowForcaDuoModal] = useState(false);
+  const [showTournaments, setShowTournaments] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   const [termoModeActive, setTermoModeActive] = useState(false);
   const [joinAlert, setJoinAlert] = useState<string | null>(null);
   const [friends, setFriends] = useState<Friend[]>(() => {
@@ -262,6 +266,36 @@ export default function App() {
     saveUserProfile(updated);
   };
 
+  // Launch tournament match into dedicated room
+  const handleStartTournamentMatch = async (tournament: Tournament) => {
+    sound.playClick();
+    setShowTournaments(false);
+    if (tournament.gameMode === 'uno') {
+      await createRoom({
+        gameMode: 'uno',
+        totalRounds: 3,
+        timeLimit: 0,
+        scoringStyle: 'dynamic',
+        unoBotsCount: 2
+      });
+    } else if (tournament.gameMode === 'forca') {
+      await createRoom({
+        gameMode: 'forca',
+        totalRounds: 3,
+        timeLimit: 0,
+        forcaCategory: 'todas',
+        scoringStyle: 'dynamic'
+      });
+    } else {
+      await createRoom({
+        gameMode: tournament.gameMode,
+        totalRounds: 3,
+        timeLimit: tournament.gameMode === 'termo_multiplayer' ? 0 : 30,
+        scoringStyle: 'dynamic'
+      });
+    }
+  };
+
   // Determine current active view
   const renderCurrentView = () => {
     if (termoModeActive) {
@@ -279,6 +313,8 @@ export default function App() {
           onOpenHowToPlay={() => setShowHowToPlay(true)}
           onOpenDictionary={() => setShowDictionary(true)}
           onOpenForcaDuoModal={() => setShowForcaDuoModal(true)}
+          onOpenTournaments={() => setShowTournaments(true)}
+          onOpenSupport={() => setShowSupport(true)}
         />
       );
     }
@@ -427,6 +463,8 @@ export default function App() {
         onOpenProfile={() => setShowProfile(true)}
         onOpenHowToPlay={() => setShowHowToPlay(true)}
         onOpenDictionary={() => setShowDictionary(true)}
+        onOpenTournaments={() => setShowTournaments(true)}
+        onOpenSupport={() => setShowSupport(true)}
         onLogoClick={() => {
           if (room) {
             if (window.confirm('Deseja realmente sair da sala atual e voltar ao menu principal?')) {
@@ -510,6 +548,21 @@ export default function App() {
           player2Name="Jogador 2"
         />
       )}
+
+      <TournamentsModal
+        isOpen={showTournaments}
+        onClose={() => setShowTournaments(false)}
+        userProfile={userProfile}
+        onUpdateProfile={handleUpdateProfile}
+        onStartTournamentMatch={handleStartTournamentMatch}
+      />
+
+      <SupportModal
+        isOpen={showSupport}
+        onClose={() => setShowSupport(false)}
+        userProfile={userProfile}
+        onUpdateProfile={handleUpdateProfile}
+      />
     </div>
   );
 }
