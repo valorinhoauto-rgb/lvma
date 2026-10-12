@@ -82,25 +82,49 @@ export const SUPPORTER_TIERS: SupporterTierInfo[] = [
   }
 ];
 
-// Chave PIX Padrão do Projeto MALM
+// Chave PIX do Projeto MALM (Chave pública em E-mail com QR Code/Copia e Cola oficial do banco)
 export const PIX_CONFIG = {
   keyType: 'Email',
   keyValue: 'minecraftthedark@gmail.com',
-  recipientName: 'MALM Jogos Multiplayer',
-  city: 'SAO PAULO'
+  emailKey: 'minecraftthedark@gmail.com',
+  recipientName: 'LEONARDO V DE MORAIS',
+  city: 'MAIRIPORA',
+  staticCode: '00020101021126330014br.gov.bcb.pix0111460675988765204000053039865802BR5920LEONARDO V DE MORAIS6009MAIRIPORA62070503***6304ADBD'
 };
 
-// Gera o código PIX Copia e Cola formatado padrão EMV
-export function generatePixCopiaECola(amount: number, txId = 'MALMAPOIO'): string {
-  const pixKey = PIX_CONFIG.keyValue;
-  const merchantAccount = `0014br.gov.bcb.pix01${pixKey.length.toString().padStart(2, '0')}${pixKey}`;
-  const merchantAccountField = `26${merchantAccount.length.toString().padStart(2, '0')}${merchantAccount}`;
-  const amountStr = amount.toFixed(2);
-  const amountField = `54${amountStr.length.toString().padStart(2, '0')}${amountStr}`;
-  const additionalData = `05${txId.length.toString().padStart(2, '0')}${txId}`;
-  const additionalDataField = `62${additionalData.length.toString().padStart(2, '0')}${additionalData}`;
+/**
+ * Cálculo oficial de CRC16-CCITT (Polinômio 0x1021, valor inicial 0xFFFF)
+ * Utilizado para validação de integridade do padrão BR Code do Banco Central do Brasil
+ */
+export function calculatePixCrc16(payload: string): string {
+  let crc = 0xFFFF;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      if ((crc & 0x8000) !== 0) {
+        crc = ((crc << 1) ^ 0x1021) & 0xFFFF;
+      } else {
+        crc = (crc << 1) & 0xFFFF;
+      }
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
 
-  return `000201${merchantAccountField}520400005303986${amountField}5802BR5920MALM JOGOS MULTIPLAYER6009SAO PAULO${additionalDataField}6304`;
+/**
+ * Gera o código PIX Copia e Cola formatado padrão EMV.
+ * Se nenhum valor for fornecido, retorna o código oficial exato gerado pelo banco.
+ */
+export function generatePixCopiaECola(amount?: number): string {
+  if (!amount || amount <= 0) {
+    return PIX_CONFIG.staticCode;
+  }
+  const p1 = '00020101021126330014br.gov.bcb.pix011146067598876520400005303986';
+  const p2 = '5802BR5920LEONARDO V DE MORAIS6009MAIRIPORA62070503***6304';
+  const amtStr = amount.toFixed(2);
+  const amtTag = '54' + amtStr.length.toString().padStart(2, '0') + amtStr;
+  const payload = p1 + amtTag + p2;
+  return payload + calculatePixCrc16(payload);
 }
 
 // Sementes iniciais para o mural parecer ativo e engajado

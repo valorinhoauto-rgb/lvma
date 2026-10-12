@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import {
   Coffee,
   Heart,
@@ -15,7 +16,10 @@ import {
   Award,
   Crown,
   QrCode,
-  MessageSquare
+  MessageSquare,
+  UserCheck,
+  MapPin,
+  Smartphone
 } from 'lucide-react';
 import { UserProfile, SupporterEntry } from '../types.ts';
 import {
@@ -46,10 +50,41 @@ export const SupportModal: React.FC<SupportModalProps> = ({
   const [activeTab, setActiveTab] = useState<'donate' | 'wall'>('donate');
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedPixCode, setCopiedPixCode] = useState(false);
+  const [useOfficialOpenCode, setUseOfficialOpenCode] = useState(true);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [supporterMessage, setSupporterMessage] = useState('');
   const [supportersWall, setSupportersWall] = useState<SupporterEntry[]>([]);
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
   const [isActivating, setIsActivating] = useState(false);
+
+  // Código PIX: Oficial do Banco Inter (valor aberto/digitado no app) ou com valor do tier
+  const activePixCode = useOfficialOpenCode
+    ? PIX_CONFIG.staticCode
+    : generatePixCopiaECola(selectedTier.priceBRL);
+
+  // Gera o QR Code escaneável real com alta fidelidade e contraste
+  useEffect(() => {
+    let isMounted = true;
+    QRCode.toDataURL(activePixCode, {
+      width: 320,
+      margin: 1,
+      color: {
+        dark: '#050b14',
+        light: '#ffffff'
+      },
+      errorCorrectionLevel: 'M'
+    })
+      .then((url) => {
+        if (isMounted) setQrCodeDataUrl(url);
+      })
+      .catch((err) => {
+        console.error('Falha ao gerar QR Code PIX:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activePixCode]);
 
   // Assinatura em tempo real do mural de apoiadores
   useEffect(() => {
@@ -62,8 +97,6 @@ export const SupportModal: React.FC<SupportModalProps> = ({
 
   if (!isOpen) return null;
 
-  const pixCode = generatePixCopiaECola(selectedTier.priceBRL);
-
   const handleCopyPixKey = () => {
     sound.playClick();
     navigator.clipboard.writeText(PIX_CONFIG.keyValue);
@@ -73,7 +106,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({
 
   const handleCopyPixCode = () => {
     sound.playClick();
-    navigator.clipboard.writeText(pixCode);
+    navigator.clipboard.writeText(activePixCode);
     setCopiedPixCode(true);
     setTimeout(() => setCopiedPixCode(false), 2500);
   };
@@ -279,53 +312,109 @@ export const SupportModal: React.FC<SupportModalProps> = ({
                 />
               </div>
 
-              {/* Painel PIX Instantâneo */}
-              <div className="bg-slate-900 border border-amber-500/30 rounded-2xl p-4 sm:p-5 space-y-4 shadow-lg shadow-amber-950/20">
-                <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-300 font-black text-xs">
+              {/* Painel PIX Oficial */}
+              <div className="bg-slate-900 border border-teal-500/30 rounded-2xl p-4 sm:p-5 space-y-4 shadow-lg shadow-teal-950/20">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-300 font-black text-xs shadow-sm">
                       PIX
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-white">Pagamento Instantâneo via PIX</div>
-                      <div className="text-[10px] text-slate-400">Banco Central do Brasil · Sem taxas</div>
+                      <div className="text-xs font-bold text-white flex items-center gap-2">
+                        <span>Pagamento Instantâneo PIX</span>
+                        <span className="text-[10px] bg-teal-500/15 border border-teal-500/30 text-teal-300 px-1.5 py-0.2 rounded font-mono">
+                          OFICIAL
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                        <span className="flex items-center gap-1">
+                          <UserCheck className="w-3 h-3 text-slate-400" />
+                          <span>{PIX_CONFIG.recipientName}</span>
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-slate-400" />
+                          <span>{PIX_CONFIG.city}</span>
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <div className="text-[10px] text-slate-400 uppercase font-semibold">Valor</div>
-                    <div className="text-sm font-black text-amber-400 font-mono">
-                      {selectedTier.formattedPrice}
-                    </div>
+                  {/* Alternador de Modo do Código */}
+                  <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setUseOfficialOpenCode(true);
+                      }}
+                      className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors cursor-pointer ${
+                        useOfficialOpenCode
+                          ? 'bg-teal-500/20 border border-teal-500/30 text-teal-300'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      QR Aberto (Valor Livre)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setUseOfficialOpenCode(false);
+                      }}
+                      className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors cursor-pointer ${
+                        !useOfficialOpenCode
+                          ? 'bg-teal-500/20 border border-teal-500/30 text-teal-300'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Plano ({selectedTier.formattedPrice})
+                    </button>
                   </div>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4 items-center">
-                  {/* QR Code Simulado e Escaneável */}
+                  {/* QR Code Real e Escaneável */}
                   <div className="flex flex-col items-center justify-center bg-slate-950 border border-slate-800 rounded-2xl p-4 text-center">
-                    <div className="w-36 h-36 bg-white rounded-xl p-2.5 shadow-inner flex flex-col items-center justify-center relative">
-                      <QrCode className="w-full h-full text-slate-950" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-7 h-7 rounded-lg bg-teal-600 border border-white flex items-center justify-center text-[10px] font-black text-white shadow">
-                          PIX
+                    <div className="w-48 h-48 bg-white rounded-2xl p-2.5 shadow-xl flex items-center justify-center overflow-hidden border-2 border-white">
+                      {qrCodeDataUrl ? (
+                        <img
+                          src={qrCodeDataUrl}
+                          alt="QR Code Oficial Pix Banco Inter / BCB"
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-slate-500 text-xs">
+                          <QrCode className="w-8 h-8 animate-pulse text-slate-400" />
+                          <span>Gerando QR Code...</span>
                         </div>
-                      </div>
+                      )}
                     </div>
-                    <span className="text-[10px] text-slate-400 mt-2 font-medium">
+                    <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-bold text-emerald-400">
+                      <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>QR Code Escaneável no Celular</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-0.5">
                       Abra o app do seu banco e aponte a câmera
                     </span>
                   </div>
 
                   {/* Chave e Código Copia e Cola */}
                   <div className="space-y-3">
-                    {/* Chave Pix */}
+                    {/* Chave Pix (E-mail) */}
                     <div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Chave PIX (Email)</div>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase mb-1">
+                        <span>Chave PIX (E-mail)</span>
+                        <span className="text-[10px] text-teal-400 font-mono">Transferência Direta</span>
+                      </div>
                       <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl p-1.5 pl-3">
-                        <span className="text-xs text-white font-mono truncate flex-1">{PIX_CONFIG.keyValue}</span>
+                        <span className="text-xs text-white font-mono font-bold tracking-wider truncate flex-1">
+                          {PIX_CONFIG.keyValue}
+                        </span>
                         <button
+                          type="button"
                           onClick={handleCopyPixKey}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 text-teal-300 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           {copiedKey ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                           <span>{copiedKey ? 'Copiado!' : 'Copiar'}</span>
@@ -333,14 +422,34 @@ export const SupportModal: React.FC<SupportModalProps> = ({
                       </div>
                     </div>
 
+                    {/* Beneficiário e Cidade */}
+                    <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 text-[11px] space-y-1">
+                      <div className="flex items-center justify-between text-slate-400">
+                        <span>Titular / Beneficiário:</span>
+                        <span className="text-white font-semibold font-mono">{PIX_CONFIG.recipientName}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-400">
+                        <span>Cidade / Praça:</span>
+                        <span className="text-slate-300 font-medium">{PIX_CONFIG.city} - SP</span>
+                      </div>
+                    </div>
+
                     {/* Pix Copia e Cola */}
                     <div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Código Copia e Cola</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase mb-1 flex items-center justify-between">
+                        <span>Código Copia e Cola (EMV)</span>
+                        {useOfficialOpenCode && (
+                          <span className="text-[9px] text-teal-400 font-mono">Original do Banco</span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl p-1.5 pl-3">
-                        <span className="text-xs text-slate-400 font-mono truncate flex-1">{pixCode}</span>
+                        <span className="text-[11px] text-slate-400 font-mono truncate flex-1 select-all">
+                          {activePixCode}
+                        </span>
                         <button
+                          type="button"
                           onClick={handleCopyPixCode}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
                         >
                           {copiedPixCode ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                           <span>{copiedPixCode ? 'Copiado!' : 'Copiar'}</span>
@@ -353,10 +462,10 @@ export const SupportModal: React.FC<SupportModalProps> = ({
                       id="btn-confirm-pix-support"
                       onClick={handleConfirmSupport}
                       disabled={isActivating}
-                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-teal-500 via-emerald-500 to-amber-500 hover:from-teal-400 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer mt-1"
                     >
                       <Sparkles className="w-4 h-4 fill-slate-950" />
-                      <span>Já fiz o PIX / Ativar Reconhecimento</span>
+                      <span>{isActivating ? 'Validando...' : 'Já fiz o PIX / Ativar Reconhecimento'}</span>
                     </button>
                   </div>
                 </div>
